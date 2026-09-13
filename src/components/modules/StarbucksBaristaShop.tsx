@@ -55,6 +55,10 @@ export const StarbucksBaristaShop: React.FC<StarbucksBaristaShopProps> = ({ onAd
   const [hasSleeve, setHasSleeve] = useState<boolean>(false);
   const [hasSplashStick, setHasSplashStick] = useState<boolean>(false);
 
+  // Barista Cashier Step
+  const [cashierStepIdx, setCashierStepIdx] = useState<number>(0);
+  const [isCashierComplete, setIsCashierComplete] = useState<boolean>(false);
+
   // Dialogue style selection for infinite realistic spoken variations
   const [dialogueStyleIndex, setDialogueStyleIndex] = useState<number>(0);
 
@@ -1318,9 +1322,6 @@ export const StarbucksBaristaShop: React.FC<StarbucksBaristaShopProps> = ({ onAd
         </div>
       </div>
       )}
-    </div>
-  );
-};
     </div>
   );
 };
