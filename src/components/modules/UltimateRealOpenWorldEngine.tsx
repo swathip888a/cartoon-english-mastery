@@ -51,7 +51,12 @@ import {
   ArrowRight,
   Shield,
   Sunset,
-  CloudRain
+  CloudRain,
+  Sliders,
+  CheckSquare,
+  Bed,
+  PhoneCall,
+  Bell
 } from 'lucide-react';
 
 interface UltimateRealOpenWorldEngineProps {
@@ -60,6 +65,7 @@ interface UltimateRealOpenWorldEngineProps {
 }
 
 type TimeOfDay = 'day' | 'sunset' | 'night' | 'neon';
+type VehicleType = 'sports_sedan' | 'luxury_suv';
 
 // Procedural Photorealistic Textures
 function createLuxuryWoodTexture(): THREE.CanvasTexture {
@@ -261,19 +267,21 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
   const [carSpeedKmH, setCarSpeedKmH] = useState<number>(0);
   const [currentLocationName, setCurrentLocationName] = useState<string>('Kyoto Starbucks Reserve & City Plaza');
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('day');
+  const [activeVehicle, setActiveVehicle] = useState<VehicleType>('sports_sedan');
 
-  // Real-World View Modals
+  // Real-World Interactive Modals
   const [showOverheadMenuModal, setShowOverheadMenuModal] = useState<boolean>(false);
   const [showFidsModal, setShowFidsModal] = useState<boolean>(false);
   const [showFormModal, setShowFormModal] = useState<boolean>(false);
-  const [activeNpcDialogue, setActiveNpcDialogue] = useState<{
-    name: string;
-    role: string;
-    dialogue: string;
-    script: string;
-    explanation: string;
-    xp: number;
-  } | null>(null);
+  const [showHotelModal, setShowHotelModal] = useState<boolean>(false);
+  const [showAirportStagesModal, setShowAirportStagesModal] = useState<boolean>(false);
+  const [showStarbucksCustomizerModal, setShowStarbucksCustomizerModal] = useState<boolean>(false);
+
+  // Consumables & Gameplay Metrics
+  const [coffeeLiquidLevel, setCoffeeLiquidLevel] = useState<number>(100);
+  const [paniniBitesLeft, setPaniniBitesLeft] = useState<number>(4);
+  const [hasHotelKeycard, setHasHotelKeycard] = useState<boolean>(false);
+  const [hasBoardingPass, setHasBoardingPass] = useState<boolean>(false);
 
   // --- DUAL ON-SCREEN VIRTUAL JOYSTICK STATE (MOUSE & TOUCH) ---
   const [leftStickPos, setLeftStickPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -284,8 +292,10 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
   const rightStickActive = useRef<boolean>(false);
   const cameraAngleYaw = useRef<number>(0);
 
-  // Target Script
+  // Target Scripts
   const fullOrderScript = "Hi! Can I please get a Short Classic Signature Hot Chocolate with Oat Milk, Blonde Espresso, and 3 pumps of Vanilla, topped with Vanilla Sweet Cold Foam, and a Tomato & Mozzarella Focaccia Panini warmed up?";
+  const airportImmigrationScript = "Good afternoon, Officer. I am here in Singapore for a five-day vacation and cultural tour. I will be staying at Marina Bay Sands.";
+  const hotelCheckinScript = "Hello! I have a reservation under the name Swathi. Could I please have a high-floor room with a skyline view and two keycards?";
 
   // Physics Refs
   const keysPressed = useRef<{ [key: string]: boolean }>({});
@@ -305,8 +315,8 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     z: 10,
     rotY: 0,
     speed: 0,
-    maxSpeed: 0.80,
-    accel: 0.022,
+    maxSpeed: 0.85,
+    accel: 0.024,
     friction: 0.96
   });
 
@@ -372,20 +382,20 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       roughness: 0.25,
       metalness: 0.15
     });
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(260, 260), groundMat);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(280, 280), groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     worldGroup.add(ground);
 
     // 4-Lane Asphalt Highway
     const roadMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.25 });
-    const road = new THREE.Mesh(new THREE.PlaneGeometry(26, 240), roadMat);
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(26, 260), roadMat);
     road.position.set(18, 0.02, 0);
     road.rotation.x = -Math.PI / 2;
     worldGroup.add(road);
 
     // Road Yellow Dashed Lines
-    for (let y = -110; y <= 110; y += 12) {
+    for (let y = -120; y <= 120; y += 12) {
       const line = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 6), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
       line.position.set(18, 0.03, y);
       line.rotation.x = -Math.PI / 2;
@@ -393,7 +403,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     }
 
     // Streetlamps with glowing lanterns & pointlights
-    for (let z = -90; z <= 90; z += 35) {
+    for (let z = -100; z <= 100; z += 35) {
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 7, 8), new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8 }));
       pole.position.set(32, 3.5, z);
       worldGroup.add(pole);
@@ -409,13 +419,13 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
 
     // Modern City Skyscrapers
     const buildingColors = [0x0f172a, 0x1e1b4b, 0x1e293b, 0x090d16];
-    for (let i = 0; i < 9; i++) {
-      const h = 28 + Math.random() * 40;
+    for (let i = 0; i < 10; i++) {
+      const h = 30 + Math.random() * 45;
       const bMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(15, h, 15),
+        new THREE.BoxGeometry(16, h, 16),
         new THREE.MeshStandardMaterial({ color: buildingColors[i % buildingColors.length], roughness: 0.2, metalness: 0.6 })
       );
-      bMesh.position.set(46 + (i % 2) * 16, h / 2, -75 + i * 20);
+      bMesh.position.set(48 + (i % 2) * 18, h / 2, -90 + i * 20);
       worldGroup.add(bMesh);
     }
 
@@ -523,16 +533,16 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
 
     // --- SINGAPORE CHANGI JEWEL & RAIN VORTEX AIRPORT (West Wing) ---
     const airportGroup = new THREE.Group();
-    airportGroup.position.set(-45, 0, 0);
+    airportGroup.position.set(-50, 0, 0);
 
     // Terminal Floor
-    const aFloor = new THREE.Mesh(new THREE.PlaneGeometry(55, 75), new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1, metalness: 0.2 }));
+    const aFloor = new THREE.Mesh(new THREE.PlaneGeometry(60, 80), new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1, metalness: 0.2 }));
     aFloor.rotation.x = -Math.PI / 2;
     aFloor.position.y = 0.06;
     airportGroup.add(aFloor);
 
     // 🌊 40m JEWEL CHANGI RAIN VORTEX WATERFALL DOME
-    const domeGeom = new THREE.CylinderGeometry(13, 15, 20, 24, 1, true);
+    const domeGeom = new THREE.CylinderGeometry(14, 16, 22, 24, 1, true);
     const domeMat = new THREE.MeshPhysicalMaterial({
       color: 0x38bdf8,
       transparent: true,
@@ -541,7 +551,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       transmission: 0.7
     });
     const jewelDome = new THREE.Mesh(domeGeom, domeMat);
-    jewelDome.position.set(0, 10, 0);
+    jewelDome.position.set(0, 11, 0);
     airportGroup.add(jewelDome);
 
     // Cascading 1200-Particle Rain Vortex Waterfall
@@ -550,9 +560,9 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     const waterfallPos = new Float32Array(waterfallCount * 3);
     for (let i = 0; i < waterfallCount; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const r = 0.5 + Math.random() * 2.2;
+      const r = 0.5 + Math.random() * 2.4;
       waterfallPos[i * 3] = Math.cos(angle) * r;
-      waterfallPos[i * 3 + 1] = Math.random() * 19;
+      waterfallPos[i * 3 + 1] = Math.random() * 21;
       waterfallPos[i * 3 + 2] = Math.sin(angle) * r;
     }
     waterfallGeo.setAttribute('position', new THREE.BufferAttribute(waterfallPos, 3));
@@ -571,7 +581,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       new THREE.PlaneGeometry(12, 6),
       new THREE.MeshBasicMaterial({ map: createAirportFidsTexture() })
     );
-    fidsTv.position.set(0, 9, -20);
+    fidsTv.position.set(0, 10, -22);
     airportGroup.add(fidsTv);
 
     // DigiYatra & Security X-Ray Gates
@@ -579,28 +589,59 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       new THREE.BoxGeometry(6, 4, 1.2),
       new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.7 })
     );
-    dyGate.position.set(-14, 2, -10);
+    dyGate.position.set(-15, 2, -10);
     airportGroup.add(dyGate);
 
     // Luggage Carousel
     const carousel = new THREE.Mesh(
-      new THREE.TorusGeometry(5.5, 1.2, 12, 24),
+      new THREE.TorusGeometry(6, 1.3, 12, 24),
       new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.3 })
     );
     carousel.rotation.x = Math.PI / 2;
-    carousel.position.set(14, 0.6, -10);
+    carousel.position.set(15, 0.6, -10);
     airportGroup.add(carousel);
 
     worldGroup.add(airportGroup);
 
-    // --- 3D DRIVABLE SPORTS SEDAN (Red Car) ---
+    // --- GRAND MARINA 5-STAR LUXURY HOTEL (East Wing) ---
+    const hotelGroup = new THREE.Group();
+    hotelGroup.position.set(0, 0, 35);
+
+    // Luxury Red Carpet Lobby Floor
+    const hFloor = new THREE.Mesh(new THREE.PlaneGeometry(40, 24), new THREE.MeshStandardMaterial({ color: 0x881337, roughness: 0.4 }));
+    hFloor.rotation.x = -Math.PI / 2;
+    hFloor.position.y = 0.06;
+    hotelGroup.add(hFloor);
+
+    // Hotel Golden Reception Desk
+    const hDesk = new THREE.Mesh(new THREE.BoxGeometry(18, 2.4, 3.5), new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.8, roughness: 0.2 }));
+    hDesk.position.set(0, 1.2, 6);
+    hotelGroup.add(hDesk);
+
+    // Hotel Signboard
+    const hSign = new THREE.Mesh(new THREE.BoxGeometry(20, 2.5, 0.4), new THREE.MeshStandardMaterial({ color: 0x450a0a, metalness: 0.9 }));
+    hSign.position.set(0, 6.5, 8);
+    hotelGroup.add(hSign);
+
+    // Hotel Concierge Marcus NPC
+    const concierge = new THREE.Group();
+    concierge.add(new THREE.Mesh(new THREE.SphereGeometry(0.55, 16, 16), new THREE.MeshStandardMaterial({ color: 0xffedd5 })));
+    const cBody = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.55, 1.3, 16), new THREE.MeshStandardMaterial({ color: 0x1e1b4b }));
+    cBody.position.y = -1.1;
+    concierge.add(cBody);
+    concierge.position.set(0, 2.5, 7.8);
+    hotelGroup.add(concierge);
+
+    worldGroup.add(hotelGroup);
+
+    // --- 3D DRIVABLE SPORTS SEDAN & LUXURY SUV ---
     const carGroup = new THREE.Group();
     // Chassis
     const carBody = new THREE.Mesh(
-      new THREE.BoxGeometry(2.5, 0.95, 5.0),
-      new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.85, roughness: 0.15 })
+      new THREE.BoxGeometry(2.5, activeVehicle === 'luxury_suv' ? 1.3 : 0.95, 5.0),
+      new THREE.MeshStandardMaterial({ color: activeVehicle === 'luxury_suv' ? 0x0f172a : 0xef4444, metalness: 0.85, roughness: 0.15 })
     );
-    carBody.position.y = 0.7;
+    carBody.position.y = activeVehicle === 'luxury_suv' ? 0.9 : 0.7;
     carBody.castShadow = true;
     carGroup.add(carBody);
 
@@ -609,7 +650,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       new THREE.BoxGeometry(2.2, 0.8, 2.8),
       new THREE.MeshPhysicalMaterial({ color: 0x0f172a, transparent: true, opacity: 0.65 })
     );
-    carGlass.position.set(0, 1.5, -0.3);
+    carGlass.position.set(0, activeVehicle === 'luxury_suv' ? 1.8 : 1.5, -0.3);
     carGroup.add(carGlass);
 
     // Wheels
@@ -707,7 +748,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
         for (let i = 0; i < waterfallCount; i++) {
           positions[i * 3 + 1] -= 0.35; // fall down
           if (positions[i * 3 + 1] < 0) {
-            positions[i * 3 + 1] = 19; // reset to top of dome
+            positions[i * 3 + 1] = 21; // reset to top of dome
           }
         }
         waterfallParticles.geometry.attributes.position.needsUpdate = true;
@@ -858,7 +899,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       window.removeEventListener('resize', handleResize);
       renderer.dispose();
     };
-  }, [isDriving, timeOfDay]);
+  }, [isDriving, timeOfDay, activeVehicle]);
 
   // Universal HTML5 Pointer-Captured Joystick Handlers (Desktop Mouse & Touch)
   const handleLeftPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -918,7 +959,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Top Banner with Real-Time Sky & Lighting Controls */}
+      {/* Top Banner with Real-Time Sky & Sector Teleporters */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 rounded-3xl border-2 border-indigo-500/40 shadow-2xl relative overflow-hidden">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
           <div>
@@ -930,11 +971,11 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
               🌍 Real Open-World: Drive, Walk, Order & Fly!
             </h2>
             <p className="text-indigo-200/80 text-xs sm:text-sm max-w-2xl mt-0.5">
-              100% Free Roam! Use the dual on-screen joysticks or WASD to walk, drive the red sports car on the highway, inspect glowing Starbucks menu TV screens, and explore Singapore Jewel Changi Airport!
+              100% Free Roam! Experience real Starbucks ordering, international airport travel & Changi waterfall, luxury 5-star hotel check-in, highway driving, and official paper document filling!
             </p>
           </div>
 
-          {/* Time of Day & Quick Teleporters */}
+          {/* Time of Day & Quick Sector Teleporters */}
           <div className="flex flex-wrap items-center gap-2 bg-slate-950/90 p-2 rounded-2xl border border-slate-800">
             {/* Day/Night Preset Selector */}
             <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-700">
@@ -978,7 +1019,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
             <button
               onClick={() => {
                 sound.playClick();
-                playerState.current.x = -45;
+                playerState.current.x = -50;
                 playerState.current.z = 0;
                 setIsDriving(false);
                 setCurrentLocationName('Singapore Jewel Changi Rain Vortex 🛫');
@@ -986,7 +1027,20 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
               }}
               className="px-3 py-2 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer"
             >
-              🛫 Singapore Airport
+              🛫 Airport
+            </button>
+            <button
+              onClick={() => {
+                sound.playClick();
+                playerState.current.x = 0;
+                playerState.current.z = 32;
+                setIsDriving(false);
+                setCurrentLocationName('Grand Marina 5-Star Luxury Hotel 🏨');
+                onAddXp(40, "Teleported to Grand Marina Hotel Lobby! 🏨");
+              }}
+              className="px-3 py-2 bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer"
+            >
+              🏨 Grand Hotel
             </button>
             <button
               onClick={() => {
@@ -1012,7 +1066,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
         {/* Top-Left Avatar & Speedometer HUD */}
         <div className="absolute top-4 left-4 bg-slate-950/90 backdrop-blur-md p-3.5 rounded-2xl border border-indigo-500/30 shadow-xl flex items-center gap-3 pointer-events-none">
           <div className="w-11 h-11 rounded-full bg-pink-500/20 text-pink-400 border border-pink-500/40 flex items-center justify-center text-xl font-black">
-            {isDriving ? '🚗' : '👑'}
+            {isDriving ? (activeVehicle === 'luxury_suv' ? '🚙' : '🏎️') : '👑'}
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -1027,28 +1081,35 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
           </div>
         </div>
 
-        {/* Top-Right In-World Action Screens */}
-        <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
+        {/* Top-Right In-World Action Screens & Hub Buttons */}
+        <div className="absolute top-4 right-4 flex flex-wrap items-center justify-end gap-2 z-20 max-w-xl">
           <button
-            onClick={() => setShowOverheadMenuModal(true)}
+            onClick={() => setShowStarbucksCustomizerModal(true)}
             className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-xl flex items-center gap-1.5 transition-all cursor-pointer"
           >
-            <Tv className="w-4 h-4" />
-            ☕ Starbucks Menu TV
+            <Coffee className="w-4 h-4" />
+            ☕ Order Starbucks
           </button>
           <button
-            onClick={() => setShowFidsModal(true)}
+            onClick={() => setShowAirportStagesModal(true)}
             className="px-3.5 py-2 bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs rounded-xl shadow-xl flex items-center gap-1.5 transition-all cursor-pointer"
           >
             <Plane className="w-4 h-4" />
-            🛫 Airport Flight Board
+            🛫 Airport Travel Hub
+          </button>
+          <button
+            onClick={() => setShowHotelModal(true)}
+            className="px-3.5 py-2 bg-rose-500 hover:bg-rose-400 text-slate-950 font-black text-xs rounded-xl shadow-xl flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <Hotel className="w-4 h-4" />
+            🏨 Hotel Suite
           </button>
           <button
             onClick={() => setShowFormModal(true)}
             className="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-xl flex items-center gap-1.5 transition-all cursor-pointer"
           >
             <FileText className="w-4 h-4" />
-            📋 Physical Form
+            📋 Travel Forms
           </button>
         </div>
 
@@ -1064,7 +1125,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
           <div className="absolute text-[10px] font-black text-emerald-400 uppercase tracking-widest top-2 pointer-events-none">
             Move Joystick
           </div>
-          {/* Compass ticks */}
           <div className="absolute top-1 text-emerald-500/40 text-[9px] font-mono pointer-events-none">▲</div>
           <div className="absolute bottom-1 text-emerald-500/40 text-[9px] font-mono pointer-events-none">▼</div>
           <div className="absolute left-1 text-emerald-500/40 text-[9px] font-mono pointer-events-none">◀</div>
@@ -1148,6 +1208,15 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
               <button
                 onClick={() => {
                   sound.playClick();
+                  setActiveVehicle(prev => prev === 'sports_sedan' ? 'luxury_suv' : 'sports_sedan');
+                }}
+                className="px-3 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-xl text-xs shadow cursor-pointer active:scale-95"
+              >
+                🔄 {activeVehicle === 'sports_sedan' ? 'SUV' : 'Sedan'}
+              </button>
+              <button
+                onClick={() => {
+                  sound.playClick();
                   setIsDriving(false);
                 }}
                 className="px-3 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl text-xs flex items-center gap-1 shadow cursor-pointer active:scale-95"
@@ -1196,7 +1265,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Mic className="w-5 h-5 text-pink-400" />
-            <h3 className="font-bold text-white text-base">Practice Your Live Real-World Spoken Order:</h3>
+            <h3 className="font-bold text-white text-base">Live Spoken English Roleplay Order:</h3>
           </div>
           <AudioSpeakButton
             text={fullOrderScript}
@@ -1220,6 +1289,302 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
           }}
         />
       </div>
+
+      {/* 🏨 GRAND 5-STAR HOTEL MODAL */}
+      {showHotelModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
+          <div className="bg-slate-900 border-2 border-rose-500/60 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl space-y-6 my-8">
+            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+              <div>
+                <span className="text-xs font-black uppercase tracking-wider text-rose-400">Grand Marina 5-Star Luxury Resort</span>
+                <h3 className="text-2xl font-black text-white">Hotel Reception & Penthouse Suite #808 🏨</h3>
+              </div>
+              <button
+                onClick={() => setShowHotelModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold cursor-pointer"
+              >
+                ✕ Back to World
+              </button>
+            </div>
+
+            {/* Concierge Greeting */}
+            <div className="p-4 bg-slate-950 rounded-2xl border border-rose-500/30 flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center text-2xl font-bold flex-shrink-0">
+                🤵
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-white text-sm">Concierge Marcus:</span>
+                  <span className="text-[10px] px-2 py-0.5 bg-rose-500/20 text-rose-300 rounded-full font-bold">Front Desk</span>
+                </div>
+                <p className="text-xs text-rose-100">
+                  "Welcome to the Grand Marina Hotel, Miss Swathi! May I assist you with checking in or carrying your luggage up to your Penthouse Suite?"
+                </p>
+              </div>
+            </div>
+
+            {/* Check-In Action Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div className="flex items-center gap-2 font-bold text-amber-400">
+                  <Key className="w-4 h-4" /> RFID Keycard Status
+                </div>
+                <div className={`p-3 rounded-xl border ${hasHotelKeycard ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
+                  {hasHotelKeycard ? '✓ Keycard #808 Active (Penthouse Skyline Floor)' : 'Keycard not yet issued'}
+                </div>
+                <button
+                  onClick={() => {
+                    sound.playSuccess();
+                    setHasHotelKeycard(true);
+                    onAddXp(50, "Received 5-Star Hotel RFID Keycard! 🔑");
+                  }}
+                  className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl shadow cursor-pointer"
+                >
+                  🔑 Check In & Collect Keycard (+50 XP)
+                </button>
+              </div>
+
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div className="flex items-center gap-2 font-bold text-sky-400">
+                  <PhoneCall className="w-4 h-4" /> Room Service Telephone
+                </div>
+                <p className="text-slate-300">
+                  Order English Breakfast, Club Sandwich, and Fresh Chamomile Tea directly to your room.
+                </p>
+                <button
+                  onClick={() => {
+                    sound.playSuccess();
+                    confetti({ particleCount: 60, spread: 70 });
+                    onAddXp(60, "Ordered 5-Star Room Service English Breakfast! 🍳");
+                  }}
+                  className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow cursor-pointer"
+                >
+                  🍳 Call Room Service (+60 XP)
+                </button>
+              </div>
+            </div>
+
+            {/* Spoken Practice for Hotel */}
+            <div className="p-4 bg-slate-950 rounded-2xl border border-rose-500/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-white text-xs">Practice Hotel Check-In English:</span>
+                <AudioSpeakButton text={hotelCheckinScript} label="Listen" className="bg-rose-500 text-white text-xs px-3 py-1 rounded-xl" />
+              </div>
+              <p className="text-xs text-rose-200">"{hotelCheckinScript}"</p>
+              <VoiceSpeechPractice
+                targetPhrase={hotelCheckinScript}
+                accentColor="rose"
+                onSuccess={() => {
+                  sound.playSuccess();
+                  confetti({ particleCount: 80, spread: 70 });
+                  onAddXp(80, "Mastered Hotel Check-In Spoken English! 🏨✨");
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🛫 AIRPORT MULTI-STAGE TRAVEL HUB MODAL */}
+      {showAirportStagesModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
+          <div className="bg-slate-900 border-2 border-sky-500/60 rounded-3xl max-w-4xl w-full p-6 sm:p-8 shadow-2xl space-y-6 my-8">
+            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+              <div>
+                <span className="text-xs font-black uppercase tracking-wider text-sky-400">Vizag VTZ & Singapore Changi Hub</span>
+                <h3 className="text-2xl font-black text-white">Full International Airport Departure Journey 🛫</h3>
+              </div>
+              <button
+                onClick={() => setShowAirportStagesModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold cursor-pointer"
+              >
+                ✕ Back to World
+              </button>
+            </div>
+
+            {/* Airport Journey Stages */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+              {/* Stage 1: Check-in & Baggage */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
+                <div className="flex items-center gap-1.5 font-bold text-sky-400">
+                  <Luggage className="w-4 h-4" /> 1. Airline Check-In
+                </div>
+                <p className="text-slate-300">
+                  Weigh check-in baggage (18.4 kg / 23 kg max) and print international boarding pass for Singapore SQ 529.
+                </p>
+                <button
+                  onClick={() => {
+                    sound.playSuccess();
+                    setHasBoardingPass(true);
+                    onAddXp(50, "Printed Boarding Pass Seat 14A! 🎫");
+                  }}
+                  className="w-full py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow cursor-pointer"
+                >
+                  🎫 Print Boarding Pass (+50 XP)
+                </button>
+              </div>
+
+              {/* Stage 2: Security X-Ray */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
+                <div className="flex items-center gap-1.5 font-bold text-amber-400">
+                  <ShieldCheck className="w-4 h-4" /> 2. CISF / TSA Security
+                </div>
+                <p className="text-slate-300">
+                  Place laptop and liquids in grey tray, walk through metal detector arch, and collect stamped boarding pass.
+                </p>
+                <button
+                  onClick={() => {
+                    sound.playSuccess();
+                    onAddXp(50, "Cleared Security Screening! 🛡️");
+                  }}
+                  className="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow cursor-pointer"
+                >
+                  🛡️ Walk Through Arch (+50 XP)
+                </button>
+              </div>
+
+              {/* Stage 3: Immigration & Waterfall */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
+                <div className="flex items-center gap-1.5 font-bold text-emerald-400">
+                  <Plane className="w-4 h-4" /> 3. Gate B12 & Waterfall
+                </div>
+                <p className="text-slate-300">
+                  View the 40m Jewel Changi Rain Vortex and board the Boeing 787 Dreamliner at Gate B12.
+                </p>
+                <button
+                  onClick={() => {
+                    sound.playSuccess();
+                    confetti({ particleCount: 100, spread: 80 });
+                    onAddXp(100, "Boarded Flight SQ 529 to Singapore! 🛫✨");
+                  }}
+                  className="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl shadow cursor-pointer"
+                >
+                  🛫 Board Airplane (+100 XP)
+                </button>
+              </div>
+            </div>
+
+            {/* Spoken Practice for Airport Immigration */}
+            <div className="p-4 bg-slate-950 rounded-2xl border border-sky-500/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-white text-xs">Practice Singapore Immigration Officer Interview:</span>
+                <AudioSpeakButton text={airportImmigrationScript} label="Listen" className="bg-sky-500 text-slate-950 text-xs px-3 py-1 rounded-xl" />
+              </div>
+              <p className="text-xs text-sky-200">"{airportImmigrationScript}"</p>
+              <VoiceSpeechPractice
+                targetPhrase={airportImmigrationScript}
+                accentColor="sky"
+                onSuccess={() => {
+                  sound.playSuccess();
+                  confetti({ particleCount: 80, spread: 70 });
+                  onAddXp(80, "Passed Singapore Immigration Interview! 🛂✨");
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ☕ STARBUCKS CUSTOM ORDER & SIPPING MODAL */}
+      {showStarbucksCustomizerModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
+          <div className="bg-slate-900 border-2 border-emerald-500/60 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl space-y-6 my-8">
+            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+              <div>
+                <span className="text-xs font-black uppercase tracking-wider text-emerald-400">Starbucks Reserve Roastery</span>
+                <h3 className="text-2xl font-black text-white">Interactive Order & Tasting Lounge ☕</h3>
+              </div>
+              <button
+                onClick={() => setShowStarbucksCustomizerModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold cursor-pointer"
+              >
+                ✕ Back to World
+              </button>
+            </div>
+
+            {/* Consumable Interactive Sips & Bites */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="bg-slate-950 p-4 rounded-2xl border border-emerald-500/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                    <Coffee className="w-4 h-4" /> Hot Chocolate Liquid: {coffeeLiquidLevel}%
+                  </span>
+                  <button
+                    onClick={() => {
+                      sound.playClick();
+                      setCoffeeLiquidLevel(100);
+                    }}
+                    className="text-[10px] text-slate-400 hover:text-white"
+                  >
+                    Refill
+                  </button>
+                </div>
+                <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
+                  <div className="bg-gradient-to-r from-amber-700 to-amber-500 h-full transition-all duration-300" style={{ width: `${coffeeLiquidLevel}%` }} />
+                </div>
+                <button
+                  disabled={coffeeLiquidLevel <= 0}
+                  onClick={() => {
+                    sound.playClick();
+                    setCoffeeLiquidLevel(prev => Math.max(0, prev - 25));
+                    if (coffeeLiquidLevel - 25 <= 0) {
+                      confetti({ particleCount: 50, spread: 60 });
+                      onAddXp(40, "Finished your delicious Signature Hot Chocolate! ☕✨");
+                    }
+                  }}
+                  className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-bold rounded-xl shadow cursor-pointer"
+                >
+                  ☕ Sip Coffee (-25%)
+                </button>
+              </div>
+
+              <div className="bg-slate-950 p-4 rounded-2xl border border-amber-500/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-amber-400 flex items-center gap-1.5">
+                    <Utensils className="w-4 h-4" /> Warmed Focaccia Panini: {paniniBitesLeft} Bites Left
+                  </span>
+                  <button
+                    onClick={() => {
+                      sound.playClick();
+                      setPaniniBitesLeft(4);
+                    }}
+                    className="text-[10px] text-slate-400 hover:text-white"
+                  >
+                    New Order
+                  </button>
+                </div>
+                <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
+                  <div className="bg-gradient-to-r from-amber-500 to-yellow-400 h-full transition-all duration-300" style={{ width: `${(paniniBitesLeft / 4) * 100}%` }} />
+                </div>
+                <button
+                  disabled={paniniBitesLeft <= 0}
+                  onClick={() => {
+                    sound.playClick();
+                    setPaniniBitesLeft(prev => Math.max(0, prev - 1));
+                    if (paniniBitesLeft - 1 <= 0) {
+                      confetti({ particleCount: 50, spread: 60 });
+                      onAddXp(40, "Finished delicious warmed Tomato Mozzarella Panini! 🥪✨");
+                    }
+                  }}
+                  className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-bold rounded-xl shadow cursor-pointer"
+                >
+                  🥪 Take a Bite (-1 Bite)
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setShowStarbucksCustomizerModal(false);
+                setShowOverheadMenuModal(true);
+              }}
+              className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold rounded-2xl text-xs border border-slate-700 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Tv className="w-4 h-4" /> View 3 Overhead Digital Store TV Screens
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Starbucks Digital Overhead Menu Modal */}
       {showOverheadMenuModal && (
