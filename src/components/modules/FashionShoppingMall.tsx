@@ -106,6 +106,24 @@ export const FashionShoppingMall: React.FC<FashionShoppingMallProps> = ({ onAddX
             </button>
           ))}
         </div>
+
+        {/* 2D Anime Fashion Studio Artwork Banner */}
+        <div className="relative rounded-2xl overflow-hidden border border-amber-500/30 shadow-2xl bg-zinc-950 mt-4">
+          <img
+            src="/images/anime_fashion_wardrobe_guide.jpg"
+            alt="2D Anime Fashion Boutique & Wardrobe Studio"
+            className="w-full h-auto object-cover max-h-[360px] mx-auto hover:scale-[1.01] transition-transform duration-300"
+          />
+          <div className="absolute bottom-3 left-3 right-3 bg-slate-950/90 backdrop-blur-md px-4 py-2.5 rounded-xl text-xs border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🌸👗</span>
+              <span className="text-amber-200 font-extrabold">
+                2D Anime Styling Studio: High-End Luxury • Fast-Fashion Trends • Streetwear Grails • Color Wheel & Fabric Science
+              </span>
+            </div>
+            <span className="text-pink-300 font-mono text-[11px] font-bold">100% 2D Anime World</span>
+          </div>
+        </div>
       </div>
 
       {/* TAB 1: STREETWEAR RACKS & FITTING ROOM */}
