@@ -241,7 +241,7 @@ export const AirplaneCabinLavatorySim: React.FC<AirplaneCabinLavatorySimProps> =
           {/* Visual Artwork Feature */}
           <div className="relative rounded-3xl overflow-hidden border-2 border-sky-500/40 shadow-2xl bg-slate-950">
             <img
-              src="/images/airplane_cabin_interior.jpg"
+              src={`${import.meta.env.BASE_URL}images/airplane_cabin_interior.jpg`}
               alt="Cartoon Airplane Cabin Interior View Row 14"
               className="w-full h-auto object-cover max-h-[480px] mx-auto hover:scale-[1.01] transition-transform duration-300"
             />

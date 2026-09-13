@@ -191,7 +191,7 @@ export const AirportMasterclass: React.FC<AirportMasterclassProps> = ({ onAddXp 
           {/* 2D Anime Artwork Banner */}
           <div className="relative rounded-3xl overflow-hidden border-2 border-blue-500/40 shadow-2xl bg-slate-950">
             <img
-              src="/images/anime_airport_immigration_visa_interview.jpg"
+              src={`${import.meta.env.BASE_URL}images/anime_airport_immigration_visa_interview.jpg`}
               alt="2D Anime Airport Immigration & Visa Interview"
               className="w-full h-auto object-cover max-h-[420px] mx-auto hover:scale-[1.01] transition-transform duration-300"
             />
@@ -584,7 +584,7 @@ export const AirportMasterclass: React.FC<AirportMasterclassProps> = ({ onAddXp 
           {/* Embedded Passport & Visa Visual Artwork */}
           <div className="relative rounded-2xl overflow-hidden border-2 border-blue-500/30 shadow-2xl bg-slate-950">
             <img
-              src="/images/passport_visa_guide.jpg"
+              src={`${import.meta.env.BASE_URL}images/passport_visa_guide.jpg`}
               alt="Indian Passport, Visas and Boarding Pass Visual Guide"
               className="w-full h-auto object-cover max-h-[460px] mx-auto hover:scale-[1.01] transition-transform duration-300"
             />

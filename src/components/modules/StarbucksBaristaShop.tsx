@@ -318,7 +318,7 @@ export const StarbucksBaristaShop: React.FC<StarbucksBaristaShopProps> = ({ onAd
             {/* Embedded Visual Artwork */}
             <div className="relative rounded-2xl overflow-hidden border-2 border-emerald-500/30 shadow-2xl bg-slate-950">
               <img
-                src="/images/starbucks_cups_lineup.jpg"
+                src={`${import.meta.env.BASE_URL}images/starbucks_cups_lineup.jpg`}
                 alt="Starbucks Cup Sizes Lineup"
                 className="w-full h-auto object-cover max-h-[460px] mx-auto hover:scale-[1.01] transition-transform duration-300"
               />
@@ -377,7 +377,7 @@ export const StarbucksBaristaShop: React.FC<StarbucksBaristaShopProps> = ({ onAd
             {/* Embedded Drink Layers Artwork */}
             <div className="relative rounded-2xl overflow-hidden border-2 border-emerald-500/30 shadow-2xl bg-slate-950">
               <img
-                src="/images/starbucks_drinks_guide.jpg"
+                src={`${import.meta.env.BASE_URL}images/starbucks_drinks_guide.jpg`}
                 alt="Starbucks Drink Recipes Visual Guide"
                 className="w-full h-auto object-cover max-h-[500px] mx-auto hover:scale-[1.01] transition-transform duration-300"
               />
@@ -782,21 +782,21 @@ export const StarbucksBaristaShop: React.FC<StarbucksBaristaShopProps> = ({ onAd
           </div>
         </div>
 
-        {/* Cartoon Anime Visual Counter Guide */}
+        {/* 2D Anime Starbucks Barista Counter Guide */}
         <div className="relative rounded-3xl overflow-hidden border-2 border-emerald-500/40 shadow-2xl bg-slate-950">
           <img
-            src="/images/cartoon_coffee_addons_guide.jpg"
-            alt="Cartoon Barista Cafe Guide"
-            className="w-full h-auto object-cover max-h-[380px] mx-auto hover:scale-[1.01] transition-transform duration-300"
+            src={`${import.meta.env.BASE_URL}images/anime_starbucks_barista_cafe.jpg`}
+            alt="2D Anime Starbucks Barista Cafe"
+            className="w-full h-auto object-cover max-h-[440px] mx-auto hover:scale-[1.01] transition-transform duration-300"
           />
           <div className="absolute bottom-3 left-3 right-3 bg-slate-950/90 backdrop-blur-md px-4 py-3 rounded-2xl text-xs border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-xl">🐱🐻</span>
+              <span className="text-xl">🌸☕</span>
               <span className="text-emerald-300 font-extrabold">
-                Cartoon Barista Master Anatomy: Fresh Blonde Shot • Steamed Oat Milk • Vanilla Pumps • Cold Foam Cloud • Toasted Mozzarella Focaccia
+                2D Anime Baristas Mei-chan & Haru-kun: Fresh Blonde Espresso • Steamed Oat Milk • Vanilla Sweet Cold Foam • Warm Panini
               </span>
             </div>
-            <span className="text-amber-300 font-mono text-[11px] font-bold">100% Visual Learning</span>
+            <span className="text-amber-300 font-mono text-[11px] font-bold">100% 2D Anime World</span>
           </div>
         </div>
 

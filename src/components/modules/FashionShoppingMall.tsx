@@ -110,7 +110,7 @@ export const FashionShoppingMall: React.FC<FashionShoppingMallProps> = ({ onAddX
         {/* 2D Anime Fashion Studio Artwork Banner */}
         <div className="relative rounded-2xl overflow-hidden border border-amber-500/30 shadow-2xl bg-zinc-950 mt-4">
           <img
-            src="/images/anime_fashion_wardrobe_guide.jpg"
+            src={`${import.meta.env.BASE_URL}images/anime_fashion_wardrobe_guide.jpg`}
             alt="2D Anime Fashion Boutique & Wardrobe Studio"
             className="w-full h-auto object-cover max-h-[360px] mx-auto hover:scale-[1.01] transition-transform duration-300"
           />
