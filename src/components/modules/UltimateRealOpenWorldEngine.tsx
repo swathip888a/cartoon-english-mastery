@@ -31,6 +31,7 @@ import {
   Luggage,
   Award,
   Maximize2,
+  Minimize2,
   MessageSquare,
   VolumeX,
   Camera,
@@ -41,7 +42,8 @@ import {
   CheckCircle2,
   ChevronRight,
   Send,
-  UserCheck
+  UserCheck,
+  Siren
 } from 'lucide-react';
 
 interface UltimateRealOpenWorldEngineProps {
@@ -73,7 +75,7 @@ interface TelltaleNPCData {
   choices: TelltaleChoice[];
 }
 
-// Procedural GTA Audio Synthesizer (Engine Revs, Horn, Sirens, Mission Passed)
+// Procedural GTA Audio Synthesizer (V8 Engine, Horn, Sirens, Fanfare)
 class GTAAudioEngine {
   private ctx: AudioContext | null = null;
   private engineOsc: OscillatorNode | null = null;
@@ -143,7 +145,7 @@ class GTAAudioEngine {
     this.init();
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
-    const chords = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+    const chords = [523.25, 659.25, 783.99, 1046.50];
     chords.forEach((freq, idx) => {
       const osc = this.ctx!.createOscillator();
       const gain = this.ctx!.createGain();
@@ -194,7 +196,7 @@ class GTAAudioEngine {
 
 const gtaAudio = new GTAAudioEngine();
 
-// Procedural Photorealistic Canvas Textures
+// Procedural Textures
 function createLuxuryWoodTexture(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
@@ -349,7 +351,7 @@ function createAirportFidsTexture(): THREE.CanvasTexture {
   return new THREE.CanvasTexture(canvas);
 }
 
-// 3D GTA Humanoid Character Builder
+// 3D GTA Character Model Builder
 function createHumanoidModel(uniformColor: number, skinColor: number = 0xffedd5, hairColor: number = 0x3b1d11): THREE.Group {
   const group = new THREE.Group();
 
@@ -386,16 +388,17 @@ function createHumanoidModel(uniformColor: number, skinColor: number = 0xffedd5,
 export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEngineProps> = ({ onAddXp }) => {
   const mountRef = useRef<HTMLDivElement | null>(null);
 
+  // Fullscreen GTA Immersion Mode
+  const [isFullscreenGTA, setIsFullscreenGTA] = useState<boolean>(false);
+
   // GTA 5 Player Stats & Progression
-  const [playerName] = useState<string>('Swathi');
   const [cashBalance, setCashBalance] = useState<number>(2854920);
   const [cashDelta, setCashDelta] = useState<{ amount: number; type: '+' | '-' } | null>(null);
   const [healthPercent] = useState<number>(100);
   const [armorPercent] = useState<number>(100);
   const [specialAbilityPercent] = useState<number>(85);
   const [wantedStars, setWantedStars] = useState<number>(0);
-  const [activeWeaponItem, setActiveWeaponItem] = useState<WeaponItem>('unarmed');
-  const [showWeaponWheel, setShowWeaponWheel] = useState<boolean>(false);
+  const [activeWeaponItem] = useState<WeaponItem>('unarmed');
 
   // GTA Radio Stations
   const radioStations = [
@@ -411,7 +414,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
 
   // GTA 5 iFruit Smartphone State
   const [showIFruitPhone, setShowIFruitPhone] = useState<boolean>(false);
-  const [phoneScreen, setPhoneScreen] = useState<'home' | 'contacts' | 'bank' | 'gps' | 'camera'>('home');
+  const [phoneScreen, setPhoneScreen] = useState<'home' | 'contacts' | 'bank' | 'gps'>('home');
 
   // GTA 5 Mission Passed Banner State
   const [missionPassedData, setMissionPassedData] = useState<{ title: string; subtitle: string; xp: number; cash: number } | null>(null);
@@ -422,7 +425,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
   const [currentLocationName, setCurrentLocationName] = useState<string>('Vinewood Blvd & Bean Machine Plaza');
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('day');
   const [activeVehicle, setActiveVehicle] = useState<VehicleModel>('sports_sedan');
-  const [headlightsOn, setHeadlightsOn] = useState<boolean>(true);
 
   // Telltale / GTA Cinematic Dialogue System
   const [nearbyNpc, setNearbyNpc] = useState<TelltaleNPCData | null>(null);
@@ -816,7 +818,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     });
 
     // 👩‍🍳 3D PERSON 1: BARISTA HANA (Standing behind counter)
-    const baristaHanaModel = createHumanoidModel(0x006241); // Green Apron
+    const baristaHanaModel = createHumanoidModel(0x006241);
     baristaHanaModel.position.set(0, 0, -8.2);
     sbGroup.add(baristaHanaModel);
 
@@ -970,7 +972,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     scene.add(carGroup);
 
     // --- 3D PLAYABLE CHARACTER (Swathi) ---
-    const playerGroup = createHumanoidModel(0xec4899); // Rose Pink Blazer
+    const playerGroup = createHumanoidModel(0xec4899);
     playerGroup.position.set(playerState.current.x, playerState.current.y, playerState.current.z);
     scene.add(playerGroup);
 
@@ -1000,10 +1002,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       if (e.code === 'KeyP') {
         sound.playClick();
         setShowIFruitPhone(prev => !prev);
-      }
-      if (e.code === 'Tab') {
-        e.preventDefault();
-        setShowWeaponWheel(prev => !prev);
       }
       if (e.code === 'KeyR' && isDriving) {
         sound.playClick();
@@ -1056,10 +1054,10 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       const pz = playerState.current.z;
       let foundNpc: TelltaleNPCData | null = null;
 
-      if (Math.hypot(px - 0, pz - (-20)) < 6) foundNpc = telltaleNPCs[0]; // Hana
-      else if (Math.hypot(px - (-68), pz - (-10)) < 6) foundNpc = telltaleNPCs[1]; // Vikram
-      else if (Math.hypot(px - (-50), pz - (-18)) < 6) foundNpc = telltaleNPCs[2]; // David
-      else if (Math.hypot(px - 0, pz - 38) < 6) foundNpc = telltaleNPCs[3]; // Marcus
+      if (Math.hypot(px - 0, pz - (-20)) < 6) foundNpc = telltaleNPCs[0];
+      else if (Math.hypot(px - (-68), pz - (-10)) < 6) foundNpc = telltaleNPCs[1];
+      else if (Math.hypot(px - (-50), pz - (-18)) < 6) foundNpc = telltaleNPCs[2];
+      else if (Math.hypot(px - 0, pz - 38) < 6) foundNpc = telltaleNPCs[3];
 
       setNearbyNpc(foundNpc);
 
@@ -1187,7 +1185,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       window.removeEventListener('resize', handleResize);
       renderer.dispose();
     };
-  }, [isDriving, timeOfDay, activeVehicle]);
+  }, [isDriving, timeOfDay, activeVehicle, isFullscreenGTA]);
 
   // Pointer-Captured Touch Joysticks
   const handleLeftPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -1246,18 +1244,18 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
   };
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto select-none font-sans">
-      {/* 🏆 GTA 5 "MISSION PASSED" VINTAGE BANNER SCREEN */}
+    <div className={`select-none font-sans ${isFullscreenGTA ? 'fixed inset-0 z-[99999] bg-black w-screen h-screen' : 'space-y-4 max-w-7xl mx-auto'}`}>
+      {/* 🏆 GTA 5 "MISSION PASSED" FULL-SCREEN SCREEN */}
       {missionPassedData && (
-        <div className="fixed inset-0 z-[100] bg-black/80 flex flex-col items-center justify-center p-6 animate-fadeIn text-center pointer-events-none">
-          <div className="w-full max-w-3xl py-6 bg-black/90 border-y-4 border-amber-400 shadow-2xl space-y-2 transform -skew-x-6">
+        <div className="fixed inset-0 z-[100] bg-black/85 flex flex-col items-center justify-center p-6 animate-fadeIn text-center pointer-events-none">
+          <div className="w-full max-w-3xl py-8 bg-black/95 border-y-4 border-amber-400 shadow-2xl space-y-3 transform -skew-x-6">
             <h1 className="text-4xl sm:text-6xl font-black tracking-widest text-amber-400 drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)] uppercase font-mono">
               MISSION PASSED
             </h1>
             <p className="text-xl sm:text-2xl font-black text-white uppercase tracking-wider font-mono">
               {missionPassedData.title}
             </p>
-            <div className="flex items-center justify-center gap-6 pt-2 font-mono text-sm sm:text-base font-bold">
+            <div className="flex items-center justify-center gap-6 pt-2 font-mono text-base sm:text-lg font-bold">
               <span className="text-emerald-400">RESPECT +</span>
               <span className="text-amber-300">+{missionPassedData.xp} XP</span>
               <span className="text-green-400 font-black">+${missionPassedData.cash.toLocaleString()}</span>
@@ -1266,7 +1264,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
         </div>
       )}
 
-      {/* 💭 Telltale Notification ("Hana will remember that...") */}
+      {/* 💭 Telltale Notification */}
       {telltaleNotification && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 border-2 border-amber-400 text-amber-200 px-6 py-3 rounded-2xl shadow-2xl font-mono text-xs sm:text-sm font-bold flex items-center gap-2 animate-bounce">
           <Sparkles className="w-4 h-4 text-amber-400 animate-spin" />
@@ -1274,62 +1272,92 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
         </div>
       )}
 
-      {/* 🎮 GTA 5 TOP CONTROLS & ENVIRONMENT HEADER */}
-      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-4 rounded-3xl border-2 border-amber-500/40 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-2xl font-black font-mono">
-            ★V
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-base font-black text-white tracking-wider uppercase font-mono">GRAND THEFT AUTO: LOS SANTOS</span>
-              <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full text-[10px] font-black">
-                SWATHI'S SIMULATOR
-              </span>
+      {/* 🎮 TOP GTA CONTROL BAR */}
+      {!isFullscreenGTA && (
+        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-4 rounded-3xl border-2 border-amber-500/40 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-2xl font-black font-mono">
+              ★V
             </div>
-            <p className="text-xs text-slate-400">
-              Cross-Platform Life Engine (PC Keyboard/Mouse • Tablet • Android Touch HUD)
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-base font-black text-white tracking-wider uppercase font-mono">GTA V: REAL LIFE LOS SANTOS</span>
+                <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full text-[10px] font-black">
+                  100% GTA 5 SIMULATOR
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                Play on PC Keyboard/Mouse, iPad/Tablet, or Android Touch HUD
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800">
+            <button
+              onClick={() => setIsFullscreenGTA(true)}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow cursor-pointer uppercase font-mono"
+            >
+              <Maximize2 className="w-4 h-4" /> ⛶ FULLSCREEN GTA 5 MODE
+            </button>
+            <button
+              onClick={() => setTimeOfDay('day')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer ${timeOfDay === 'day' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
+            >
+              <Sun className="w-3.5 h-3.5" /> Day
+            </button>
+            <button
+              onClick={() => setTimeOfDay('sunset')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer ${timeOfDay === 'sunset' ? 'bg-orange-500 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+            >
+              <Sunset className="w-3.5 h-3.5" /> Sunset
+            </button>
+            <button
+              onClick={() => setTimeOfDay('night')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer ${timeOfDay === 'night' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+            >
+              <Moon className="w-3.5 h-3.5" /> Night
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 🏙️ FULLSCREEN / 3D GTA VIEWPORT & EXACT GTA 5 HUD */}
+      <div className={`relative overflow-hidden bg-black shadow-2xl ${isFullscreenGTA ? 'w-screen h-screen' : 'rounded-3xl border-4 border-slate-800 h-[620px]'}`}>
+        <div ref={mountRef} className="w-full h-full bg-slate-950 cursor-grab active:cursor-grabbing" />
+
+        {/* Fullscreen Exit Button */}
+        {isFullscreenGTA && (
+          <button
+            onClick={() => setIsFullscreenGTA(false)}
+            className="absolute top-4 left-4 z-40 px-4 py-2 bg-black/80 hover:bg-slate-800 border border-slate-700 text-white font-mono text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-2xl"
+          >
+            <Minimize2 className="w-4 h-4" /> Exit Fullscreen [Esc]
+          </button>
+        )}
+
+        {/* 📋 GTA 5 TOP-LEFT HELP PROMPT BOX */}
+        <div className={`absolute z-20 pointer-events-none max-w-xs ${isFullscreenGTA ? 'top-16 left-4' : 'top-4 left-4'}`}>
+          <div className="bg-black/85 backdrop-blur-md p-3 rounded-xl border border-slate-700 text-white text-[11px] font-mono shadow-2xl space-y-1">
+            <div className="font-bold text-amber-400 uppercase">GTA 5 CONTROLS</div>
+            <div className="text-slate-300">
+              • <span className="text-emerald-400 font-bold">[W][A][S][D] / Joystick</span>: Move & Steer
+            </div>
+            <div className="text-slate-300">
+              • <span className="text-amber-300 font-bold">[F] / [△]</span>: Enter/Exit Cars & Airplane
+            </div>
+            <div className="text-slate-300">
+              • <span className="text-sky-300 font-bold">[E] / [💬]</span>: Talk & Practice English
+            </div>
+            <div className="text-slate-300">
+              • <span className="text-pink-300 font-bold">[H] / [◯]</span>: Car Horn & Siren
+            </div>
+            <div className="text-slate-300">
+              • <span className="text-indigo-300 font-bold">[P] / [📱]</span>: iFruit Smartphone
+            </div>
           </div>
         </div>
 
-        {/* Time of Day & Fast Teleporters */}
-        <div className="flex flex-wrap items-center gap-2 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800">
-          <button
-            onClick={() => setTimeOfDay('day')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer ${timeOfDay === 'day' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
-          >
-            <Sun className="w-3.5 h-3.5" /> Day
-          </button>
-          <button
-            onClick={() => setTimeOfDay('sunset')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer ${timeOfDay === 'sunset' ? 'bg-orange-500 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-          >
-            <Sunset className="w-3.5 h-3.5" /> Sunset
-          </button>
-          <button
-            onClick={() => setTimeOfDay('night')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer ${timeOfDay === 'night' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-          >
-            <Moon className="w-3.5 h-3.5" /> Night
-          </button>
-          <button
-            onClick={() => {
-              sound.playClick();
-              setShowIFruitPhone(true);
-            }}
-            className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow cursor-pointer"
-          >
-            <Smartphone className="w-3.5 h-3.5" /> iFruit Phone [P]
-          </button>
-        </div>
-      </div>
-
-      {/* 🏙️ MAIN 3D GTA VIEWPORT & AUTHENTIC GTA 5 HUD OVERLAY */}
-      <div className="relative rounded-3xl overflow-hidden border-4 border-slate-800 bg-black shadow-2xl">
-        <div ref={mountRef} className="w-full h-[580px] bg-slate-950 cursor-grab active:cursor-grabbing" />
-
-        {/* 🌟 TOP-RIGHT GTA 5 HUD (MONEY, WANTED STARS, AMMO/ITEM) */}
+        {/* 🌟 GTA 5 TOP-RIGHT HUD (MONEY, WANTED STARS, WEAPON) */}
         <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-1.5 pointer-events-none font-mono select-none">
           {/* Wanted Stars (★ ★ ★ ★ ★) */}
           <div className="flex items-center gap-1 text-base">
@@ -1341,26 +1369,24 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
             ))}
           </div>
 
-          {/* GTA 5 Cash Display with Green Font */}
+          {/* GTA 5 Cash Display */}
           <div className="flex items-baseline gap-1 text-2xl sm:text-3xl font-black text-emerald-400 drop-shadow-[0_3px_3px_rgba(0,0,0,0.9)] tracking-tight">
             <span className="text-emerald-500">$</span>
             <span>{cashBalance.toLocaleString()}</span>
           </div>
 
-          {/* Floating Cash Delta */}
           {cashDelta && (
             <div className={`text-sm sm:text-base font-black animate-bounce ${cashDelta.type === '+' ? 'text-green-400' : 'text-red-400'}`}>
               {cashDelta.type}${cashDelta.amount.toLocaleString()}
             </div>
           )}
 
-          {/* Active Weapon / Item Indicator */}
           <div className="bg-black/80 backdrop-blur-md px-3 py-1 rounded-xl border border-slate-700 text-xs font-bold text-amber-300 flex items-center gap-1.5">
-            <span>{activeWeaponItem === 'coffee' ? '☕ Caramel Macchiato' : activeWeaponItem === 'card' ? '💳 Apple Pay / Card' : activeWeaponItem === 'boarding_pass' ? '🎫 SQ 529 Pass' : activeWeaponItem === 'keycard' ? '🗝️ Suite #808 Key' : activeWeaponItem === 'phone' ? '📱 iFruit 9S' : '👊 Unarmed'}</span>
+            <span>{activeWeaponItem === 'coffee' ? '☕ Caramel Macchiato' : activeWeaponItem === 'card' ? '💳 Apple Pay' : activeWeaponItem === 'boarding_pass' ? '🎫 SQ 529 Pass' : activeWeaponItem === 'keycard' ? '🗝️ Suite #808' : activeWeaponItem === 'phone' ? '📱 iFruit 9S' : '👊 Unarmed'}</span>
           </div>
         </div>
 
-        {/* 📻 GTA 5 RADIO STATION POPUP HUD */}
+        {/* 📻 GTA 5 RADIO HUD */}
         {showRadioHUD && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-black/90 border-2 border-amber-400 px-6 py-2 rounded-2xl shadow-2xl flex items-center gap-3 animate-fadeIn">
             <span className="text-2xl">{radioStations[currentRadioIndex].icon}</span>
@@ -1371,49 +1397,40 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
           </div>
         )}
 
-        {/* 🗺️ BOTTOM-LEFT AUTHENTIC GTA 5 RADAR MINI-MAP & HEALTH/ARMOR BARS */}
+        {/* 🗺️ BOTTOM-LEFT GTA 5 RADAR MINI-MAP & HEALTH/ARMOR */}
         <div className="absolute bottom-6 left-6 z-20 flex flex-col items-start gap-1 select-none">
           <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-2xl bg-black/85 border-2 border-slate-600 backdrop-blur-md relative overflow-hidden shadow-2xl p-2 flex flex-col justify-between">
-            {/* Compass & North Pointer */}
             <div className="flex items-center justify-between text-[10px] font-mono font-black text-slate-400">
               <span className="text-amber-400">LSIA/VINEWOOD</span>
               <span className="text-sky-400">N ▲</span>
             </div>
 
-            {/* Radar Grid Center & GPS Pointer */}
             <div className="relative flex-1 flex items-center justify-center">
               <div className="w-full h-[1px] bg-slate-800 absolute" />
               <div className="h-full w-[1px] bg-slate-800 absolute" />
               <div className="w-16 h-16 rounded-full border border-slate-700/60 absolute" />
               
-              {/* Mission Blips on Radar */}
               <div className="absolute w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping top-3 left-4" title="Starbucks" />
               <div className="absolute w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping top-4 right-3" title="Airport Security" />
               <div className="absolute w-2.5 h-2.5 rounded-full bg-sky-400 animate-ping bottom-4 left-3" title="Immigration" />
               <div className="absolute w-2.5 h-2.5 rounded-full bg-rose-400 animate-ping bottom-3 right-4" title="Hotel Lobby" />
 
-              {/* Player Arrow */}
               <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[12px] border-b-cyan-400 shadow-lg transform rotate-0" />
             </div>
 
-            {/* Location Tag */}
             <div className="text-[9px] font-black text-slate-300 truncate font-mono">
               {isDriving ? `CRUISING • ${carSpeedKmH} KM/H` : currentLocationName}
             </div>
           </div>
 
-          {/* GTA 5 Health (Green), Armor (Blue), and Special Ability (Yellow) Bars */}
           <div className="w-36 sm:w-44 flex flex-col gap-1 bg-black/90 p-1.5 rounded-xl border border-slate-800">
-            {/* Health Bar (Green) */}
             <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
               <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${healthPercent}%` }} />
             </div>
             <div className="flex gap-1">
-              {/* Armor Bar (Blue) */}
               <div className="flex-1 h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
                 <div className="h-full bg-sky-500 rounded-full" style={{ width: `${armorPercent}%` }} />
               </div>
-              {/* Special Ability Bar (Yellow) */}
               <div className="flex-1 h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
                 <div className="h-full bg-amber-400 rounded-full" style={{ width: `${specialAbilityPercent}%` }} />
               </div>
@@ -1421,7 +1438,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
           </div>
         </div>
 
-        {/* 💬 GTA-STYLE TALK / INTERACTION PROMPT */}
+        {/* 💬 TALK / INTERACTION PROMPT */}
         {nearbyNpc && (
           <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 animate-bounce">
             <button
@@ -1438,8 +1455,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
           </div>
         )}
 
-        {/* 📱 GTA TOUCH CONTROLLER CLUSTER (FOR ANDROID TABLET & LAPTOP) */}
-        {/* Left Analog Movement Stick */}
+        {/* 📱 GTA TOUCH CONTROLLER CLUSTER */}
         <div
           onPointerDown={handleLeftPointerDown}
           onPointerMove={handleLeftPointerMove}
@@ -1458,7 +1474,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
           </div>
         </div>
 
-        {/* Right 360° Camera Look Stick */}
         <div
           onPointerDown={handleRightPointerDown}
           onPointerMove={handleRightPointerMove}
@@ -1477,9 +1492,8 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
           </div>
         </div>
 
-        {/* Right PlayStation / Xbox Style GTA Action Cluster (△ ✕ ◻ ◯) */}
+        {/* Right Action Cluster (△ ✕ ◻ ◯) */}
         <div className="absolute bottom-6 right-4 z-30 flex flex-col items-center gap-1.5">
-          {/* Triangle: Enter/Exit Vehicle */}
           <button
             onClick={() => {
               const dist = Math.hypot(playerState.current.x - carState.current.x, playerState.current.z - carState.current.z);
@@ -1504,7 +1518,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
             △
           </button>
           <div className="flex items-center gap-1.5">
-            {/* Square: Jump / Brake */}
             <button
               onClick={() => {
                 if (!isDriving && playerState.current.isGrounded) {
@@ -1518,7 +1531,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
             >
               ◻
             </button>
-            {/* Circle: Horn / Action */}
             <button
               onClick={() => {
                 if (isDriving) gtaAudio.playHorn();
@@ -1530,7 +1542,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
               ◯
             </button>
           </div>
-          {/* Cross: Sprint / Accelerate */}
           <button
             onPointerDown={() => { keysPressed.current['ShiftLeft'] = true; }}
             onPointerUp={() => { keysPressed.current['ShiftLeft'] = false; }}
@@ -1546,10 +1557,8 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       {showIFruitPhone && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
           <div className="w-full max-w-sm bg-slate-950 border-4 border-slate-700 rounded-[44px] p-4 shadow-2xl space-y-4 relative overflow-hidden">
-            {/* Phone Speaker Notch */}
             <div className="w-24 h-4 bg-slate-800 rounded-full mx-auto" />
 
-            {/* Phone Header */}
             <div className="flex items-center justify-between text-xs font-mono text-slate-400 px-2">
               <span className="font-bold">iFruit 9S • 5G</span>
               <span className="text-amber-400 font-bold">14:45</span>
@@ -1678,7 +1687,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
               </div>
             )}
 
-            {/* Phone Home Bar Button */}
             <div className="pt-2 text-center">
               <button
                 onClick={() => setShowIFruitPhone(false)}
@@ -1689,10 +1697,9 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
         </div>
       )}
 
-      {/* 🎬 TELLTALE CINEMATIC DIALOGUE HUD (WIDE LETTERBOX & 4-WAY WHEEL) */}
+      {/* 🎬 TELLTALE CINEMATIC DIALOGUE HUD */}
       {activeTelltaleDialogue && (
         <div className="fixed inset-0 z-50 bg-black/95 flex flex-col justify-between p-4 sm:p-8 animate-fadeIn">
-          {/* Top Letterbox Bar */}
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-2xl font-black">
@@ -1713,7 +1720,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
             </button>
           </div>
 
-          {/* Center Cinematic Subtitle Display */}
           <div className="max-w-3xl mx-auto w-full p-4 bg-black/90 border-2 border-amber-500/40 rounded-2xl space-y-2 shadow-2xl my-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-amber-400 uppercase font-mono">{activeTelltaleDialogue.name}</span>
@@ -1724,7 +1730,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
             </p>
           </div>
 
-          {/* Bottom 4-Way Telltale Choice Wheel */}
           <div className="max-w-4xl mx-auto w-full space-y-3 pb-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               {activeTelltaleDialogue.choices.map((choice, idx) => (
@@ -1747,7 +1752,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
               ))}
             </div>
 
-            {/* If choice selected: Pronounce with Voice Practice */}
             {selectedChoice && (
               <div className="p-4 bg-slate-950 rounded-2xl border border-emerald-500/50 space-y-3 animate-fadeIn">
                 <div className="space-y-1">
