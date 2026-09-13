@@ -49,13 +49,17 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowRight,
-  Shield
+  Shield,
+  Sunset,
+  CloudRain
 } from 'lucide-react';
 
 interface UltimateRealOpenWorldEngineProps {
   onAddXp: (amount: number, reason: string) => void;
   onNavigateTab?: (tabName: string) => void;
 }
+
+type TimeOfDay = 'day' | 'sunset' | 'night' | 'neon';
 
 // Procedural Photorealistic Textures
 function createLuxuryWoodTexture(): THREE.CanvasTexture {
@@ -256,6 +260,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
   const [isDriving, setIsDriving] = useState<boolean>(false);
   const [carSpeedKmH, setCarSpeedKmH] = useState<number>(0);
   const [currentLocationName, setCurrentLocationName] = useState<string>('Kyoto Starbucks Reserve & City Plaza');
+  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('day');
 
   // Real-World View Modals
   const [showOverheadMenuModal, setShowOverheadMenuModal] = useState<boolean>(false);
@@ -269,10 +274,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     explanation: string;
     xp: number;
   } | null>(null);
-
-  // Interactive Consumables
-  const [drinkLiquidPct, setDrinkLiquidPct] = useState<number>(100);
-  const [foodBitesLeft, setFoodBitesLeft] = useState<number>(4);
 
   // --- DUAL ON-SCREEN VIRTUAL JOYSTICK STATE (MOUSE & TOUCH) ---
   const [leftStickPos, setLeftStickPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -295,7 +296,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     rotY: 0,
     vy: 0,
     isGrounded: true,
-    speed: 0.20
+    speed: 0.22
   });
 
   const carState = useRef({
@@ -304,8 +305,8 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     z: 10,
     rotY: 0,
     speed: 0,
-    maxSpeed: 0.75,
-    accel: 0.02,
+    maxSpeed: 0.80,
+    accel: 0.022,
     friction: 0.96
   });
 
@@ -316,8 +317,16 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
 
     // 1. Scene, Camera, WebGL Renderer
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0f1d);
-    scene.fog = new THREE.FogExp2(0x0a0f1d, 0.007);
+    
+    // Dynamic Sky Color based on timeOfDay
+    const skyColors: Record<TimeOfDay, number> = {
+      day: 0x38bdf8,
+      sunset: 0xf97316,
+      night: 0x020617,
+      neon: 0x0f172a
+    };
+    scene.background = new THREE.Color(skyColors[timeOfDay]);
+    scene.fog = new THREE.FogExp2(skyColors[timeOfDay], timeOfDay === 'day' ? 0.005 : 0.009);
 
     const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
     camera.position.set(0, 6, 16);
@@ -328,16 +337,17 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.3;
+    renderer.toneMappingExposure = timeOfDay === 'night' ? 0.85 : timeOfDay === 'sunset' ? 1.1 : 1.35;
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
     // 2. Realistic Lighting Setup
-    const ambient = new THREE.AmbientLight(0xfffaed, 1.1);
+    const ambientColor = timeOfDay === 'sunset' ? 0xfde047 : timeOfDay === 'night' ? 0x1e293b : 0xfffaed;
+    const ambient = new THREE.AmbientLight(ambientColor, timeOfDay === 'night' ? 0.4 : 1.1);
     scene.add(ambient);
 
-    const sun = new THREE.DirectionalLight(0xfff3d6, 2.0);
-    sun.position.set(40, 70, 40);
+    const sun = new THREE.DirectionalLight(timeOfDay === 'sunset' ? 0xf97316 : 0xfff3d6, timeOfDay === 'night' ? 0.2 : 2.2);
+    sun.position.set(timeOfDay === 'sunset' ? 60 : 40, timeOfDay === 'sunset' ? 20 : 70, 40);
     sun.castShadow = true;
     sun.shadow.mapSize.width = 1024;
     sun.shadow.mapSize.height = 1024;
@@ -359,31 +369,31 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     // Ground Pavement (Polished Granite/Marble)
     const groundMat = new THREE.MeshStandardMaterial({
       map: createPolishedMarbleTexture(),
-      roughness: 0.3,
-      metalness: 0.1
+      roughness: 0.25,
+      metalness: 0.15
     });
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), groundMat);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(260, 260), groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     worldGroup.add(ground);
 
     // 4-Lane Asphalt Highway
     const roadMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.25 });
-    const road = new THREE.Mesh(new THREE.PlaneGeometry(26, 220), roadMat);
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(26, 240), roadMat);
     road.position.set(18, 0.02, 0);
     road.rotation.x = -Math.PI / 2;
     worldGroup.add(road);
 
     // Road Yellow Dashed Lines
-    for (let y = -100; y <= 100; y += 12) {
+    for (let y = -110; y <= 110; y += 12) {
       const line = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 6), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
       line.position.set(18, 0.03, y);
       line.rotation.x = -Math.PI / 2;
       worldGroup.add(line);
     }
 
-    // Streetlamps with glowing lanterns
-    for (let z = -80; z <= 80; z += 35) {
+    // Streetlamps with glowing lanterns & pointlights
+    for (let z = -90; z <= 90; z += 35) {
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 7, 8), new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8 }));
       pole.position.set(32, 3.5, z);
       worldGroup.add(pole);
@@ -392,20 +402,20 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       lamp.position.set(31.2, 7.2, z);
       worldGroup.add(lamp);
 
-      const sl = new THREE.PointLight(0xfef08a, 1.8, 20);
+      const sl = new THREE.PointLight(0xfef08a, timeOfDay === 'night' || timeOfDay === 'neon' ? 2.5 : 1.2, 25);
       sl.position.set(31.2, 7.0, z);
       worldGroup.add(sl);
     }
 
     // Modern City Skyscrapers
     const buildingColors = [0x0f172a, 0x1e1b4b, 0x1e293b, 0x090d16];
-    for (let i = 0; i < 8; i++) {
-      const h = 25 + Math.random() * 35;
+    for (let i = 0; i < 9; i++) {
+      const h = 28 + Math.random() * 40;
       const bMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(14, h, 14),
+        new THREE.BoxGeometry(15, h, 15),
         new THREE.MeshStandardMaterial({ color: buildingColors[i % buildingColors.length], roughness: 0.2, metalness: 0.6 })
       );
-      bMesh.position.set(45 + (i % 2) * 16, h / 2, -60 + i * 22);
+      bMesh.position.set(46 + (i % 2) * 16, h / 2, -75 + i * 20);
       worldGroup.add(bMesh);
     }
 
@@ -473,6 +483,25 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     espMachine.position.set(-6, 3.2, -6);
     sbGroup.add(espMachine);
 
+    // Coffee Steam Particle System
+    const steamCount = 60;
+    const steamGeo = new THREE.BufferGeometry();
+    const steamPositions = new Float32Array(steamCount * 3);
+    for (let i = 0; i < steamCount; i++) {
+      steamPositions[i * 3] = -6 + (Math.random() - 0.5) * 1.5;
+      steamPositions[i * 3 + 1] = 4.2 + Math.random() * 2.5;
+      steamPositions[i * 3 + 2] = -6 + (Math.random() - 0.5) * 1.5;
+    }
+    steamGeo.setAttribute('position', new THREE.BufferAttribute(steamPositions, 3));
+    const steamMat = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.35,
+      transparent: true,
+      opacity: 0.35
+    });
+    const steamParticles = new THREE.Points(steamGeo, steamMat);
+    sbGroup.add(steamParticles);
+
     // Bakery Showcase with Paninis
     const bakeryShowcase = new THREE.Mesh(
       new THREE.BoxGeometry(6.5, 2.2, 2.8),
@@ -497,36 +526,45 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     airportGroup.position.set(-45, 0, 0);
 
     // Terminal Floor
-    const aFloor = new THREE.Mesh(new THREE.PlaneGeometry(50, 70), new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1, metalness: 0.2 }));
+    const aFloor = new THREE.Mesh(new THREE.PlaneGeometry(55, 75), new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1, metalness: 0.2 }));
     aFloor.rotation.x = -Math.PI / 2;
     aFloor.position.y = 0.06;
     airportGroup.add(aFloor);
 
     // 🌊 40m JEWEL CHANGI RAIN VORTEX WATERFALL DOME
-    const domeGeom = new THREE.CylinderGeometry(12, 14, 18, 24, 1, true);
+    const domeGeom = new THREE.CylinderGeometry(13, 15, 20, 24, 1, true);
     const domeMat = new THREE.MeshPhysicalMaterial({
       color: 0x38bdf8,
       transparent: true,
-      opacity: 0.4,
+      opacity: 0.45,
       roughness: 0.1,
-      metalness: 0.1,
       transmission: 0.7
     });
     const jewelDome = new THREE.Mesh(domeGeom, domeMat);
-    jewelDome.position.set(0, 9, 0);
+    jewelDome.position.set(0, 10, 0);
     airportGroup.add(jewelDome);
 
-    // Cascading Water Column
-    const waterfallGeom = new THREE.CylinderGeometry(2.5, 3.2, 17, 16);
-    const waterfallMat = new THREE.MeshStandardMaterial({
+    // Cascading 1200-Particle Rain Vortex Waterfall
+    const waterfallCount = 1200;
+    const waterfallGeo = new THREE.BufferGeometry();
+    const waterfallPos = new Float32Array(waterfallCount * 3);
+    for (let i = 0; i < waterfallCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const r = 0.5 + Math.random() * 2.2;
+      waterfallPos[i * 3] = Math.cos(angle) * r;
+      waterfallPos[i * 3 + 1] = Math.random() * 19;
+      waterfallPos[i * 3 + 2] = Math.sin(angle) * r;
+    }
+    waterfallGeo.setAttribute('position', new THREE.BufferAttribute(waterfallPos, 3));
+    const waterfallParticleMat = new THREE.PointsMaterial({
       color: 0x67e8f9,
+      size: 0.35,
       transparent: true,
-      opacity: 0.75,
-      roughness: 0.05
+      opacity: 0.8
     });
-    const waterfall = new THREE.Mesh(waterfallGeom, waterfallMat);
-    waterfall.position.set(0, 8.5, 0);
-    airportGroup.add(waterfall);
+    const waterfallParticles = new THREE.Points(waterfallGeo, waterfallParticleMat);
+    waterfallParticles.position.set(0, 0.5, 0);
+    airportGroup.add(waterfallParticles);
 
     // Giant Airport Live Flight Board (FIDS) Screen
     const fidsTv = new THREE.Mesh(
@@ -546,7 +584,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
 
     // Luggage Carousel
     const carousel = new THREE.Mesh(
-      new THREE.TorusGeometry(5, 1.2, 12, 24),
+      new THREE.TorusGeometry(5.5, 1.2, 12, 24),
       new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.3 })
     );
     carousel.rotation.x = Math.PI / 2;
@@ -586,13 +624,13 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     }
 
     // Headlight Spotlights
-    const hl1 = new THREE.SpotLight(0xfffaed, 3.5, 35, Math.PI / 6);
+    const hl1 = new THREE.SpotLight(0xfffaed, timeOfDay === 'night' ? 5.0 : 3.5, 40, Math.PI / 6);
     hl1.position.set(-0.9, 0.75, 2.5);
     hl1.target.position.set(-0.9, 0, 18);
     carGroup.add(hl1);
     carGroup.add(hl1.target);
 
-    const hl2 = new THREE.SpotLight(0xfffaed, 3.5, 35, Math.PI / 6);
+    const hl2 = new THREE.SpotLight(0xfffaed, timeOfDay === 'night' ? 5.0 : 3.5, 40, Math.PI / 6);
     hl2.position.set(0.9, 0.75, 2.5);
     hl2.target.position.set(0.9, 0, 18);
     carGroup.add(hl2);
@@ -644,7 +682,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
         }
       }
       if (e.code === 'Space' && playerState.current.isGrounded && !isDriving) {
-        playerState.current.vy = 0.25;
+        playerState.current.vy = 0.26;
         playerState.current.isGrounded = false;
         sound.playClick();
       }
@@ -656,16 +694,35 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
 
-    // 5. 60 FPS Game Loop
+    // 5. 60 FPS Game Loop with Particle Animation
     let animId: number;
     let tick = 0;
 
     const animate = () => {
       tick++;
 
-      // Animate Jewel Waterfall
-      if (waterfall) {
-        waterfall.rotation.y += 0.02;
+      // Animate Waterfall Particles
+      if (waterfallParticles) {
+        const positions = waterfallParticles.geometry.attributes.position.array as Float32Array;
+        for (let i = 0; i < waterfallCount; i++) {
+          positions[i * 3 + 1] -= 0.35; // fall down
+          if (positions[i * 3 + 1] < 0) {
+            positions[i * 3 + 1] = 19; // reset to top of dome
+          }
+        }
+        waterfallParticles.geometry.attributes.position.needsUpdate = true;
+      }
+
+      // Animate Coffee Steam Particles
+      if (steamParticles) {
+        const positions = steamParticles.geometry.attributes.position.array as Float32Array;
+        for (let i = 0; i < steamCount; i++) {
+          positions[i * 3 + 1] += 0.03; // rise up
+          if (positions[i * 3 + 1] > 7.0) {
+            positions[i * 3 + 1] = 4.2; // reset
+          }
+        }
+        steamParticles.geometry.attributes.position.needsUpdate = true;
       }
 
       // Read Virtual Joystick + Keys for movement
@@ -687,13 +744,13 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
         if (throttle > 0) {
           carState.current.speed = Math.min(carState.current.maxSpeed, carState.current.speed + carState.current.accel);
         } else if (throttle < 0) {
-          carState.current.speed = Math.max(-carState.current.maxSpeed * 0.4, carState.current.speed - carState.current.accel);
+          carState.current.speed = Math.max(-carState.current.maxSpeed * 0.45, carState.current.speed - carState.current.accel);
         } else {
           carState.current.speed *= carState.current.friction;
         }
 
         if (Math.abs(carState.current.speed) > 0.01) {
-          carState.current.rotY -= steering * 0.035 * (carState.current.speed > 0 ? 1 : -1);
+          carState.current.rotY -= steering * 0.038 * (carState.current.speed > 0 ? 1 : -1);
         }
 
         carState.current.x += Math.sin(carState.current.rotY) * carState.current.speed;
@@ -711,10 +768,10 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
         const cz = carState.current.z;
         camera.position.set(
           cx - Math.sin(carState.current.rotY) * 10,
-          5.0,
+          5.2,
           cz - Math.cos(carState.current.rotY) * 10
         );
-        camera.lookAt(cx, 1.5, cz);
+        camera.lookAt(cx, 1.6, cz);
 
       } else {
         // --- ON FOOT WALKING PHYSICS ---
@@ -801,7 +858,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       window.removeEventListener('resize', handleResize);
       renderer.dispose();
     };
-  }, [isDriving]);
+  }, [isDriving, timeOfDay]);
 
   // Universal HTML5 Pointer-Captured Joystick Handlers (Desktop Mouse & Touch)
   const handleLeftPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -818,12 +875,12 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     const dx = e.clientX - centerX;
     const dy = e.clientY - centerY;
     const dist = Math.hypot(dx, dy);
-    const maxR = 40;
+    const maxR = 42;
     const clampR = Math.min(dist, maxR);
     const nx = dist > 0 ? (dx / dist) * (clampR / maxR) : 0;
     const ny = dist > 0 ? (dy / dist) * (clampR / maxR) : 0;
 
-    setLeftStickPos({ x: nx * 32, y: ny * 32 });
+    setLeftStickPos({ x: nx * 34, y: ny * 34 });
     leftStickVector.current = { x: nx, y: ny };
   };
 
@@ -861,7 +918,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Top Banner */}
+      {/* Top Banner with Real-Time Sky & Lighting Controls */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 rounded-3xl border-2 border-indigo-500/40 shadow-2xl relative overflow-hidden">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
           <div>
@@ -877,8 +934,34 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
             </p>
           </div>
 
-          {/* Quick Teleporters */}
-          <div className="flex flex-wrap items-center gap-1.5 bg-slate-950/90 p-2 rounded-2xl border border-slate-800">
+          {/* Time of Day & Quick Teleporters */}
+          <div className="flex flex-wrap items-center gap-2 bg-slate-950/90 p-2 rounded-2xl border border-slate-800">
+            {/* Day/Night Preset Selector */}
+            <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-700">
+              <button
+                onClick={() => setTimeOfDay('day')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 ${timeOfDay === 'day' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
+                title="Sunny Midday"
+              >
+                <Sun className="w-3.5 h-3.5" /> Day
+              </button>
+              <button
+                onClick={() => setTimeOfDay('sunset')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 ${timeOfDay === 'sunset' ? 'bg-orange-500 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                title="Golden Sunset"
+              >
+                <Sunset className="w-3.5 h-3.5" /> Sunset
+              </button>
+              <button
+                onClick={() => setTimeOfDay('night')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 ${timeOfDay === 'night' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                title="Midnight City Lights"
+              >
+                <Moon className="w-3.5 h-3.5" /> Night
+              </button>
+            </div>
+
+            {/* Teleport buttons */}
             <button
               onClick={() => {
                 sound.playClick();
@@ -888,7 +971,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
                 setCurrentLocationName('Starbucks Reserve Kyoto & Roastery');
                 onAddXp(30, "Teleported to Starbucks Reserve! ☕");
               }}
-              className="px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow"
+              className="px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer"
             >
               ☕ Starbucks
             </button>
@@ -901,7 +984,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
                 setCurrentLocationName('Singapore Jewel Changi Rain Vortex 🛫');
                 onAddXp(40, "Teleported to Singapore Changi Airport! 🛫");
               }}
-              className="px-3 py-2 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs rounded-xl shadow"
+              className="px-3 py-2 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer"
             >
               🛫 Singapore Airport
             </button>
@@ -914,7 +997,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
                 setCurrentLocationName('Grand City 4-Lane Highway 🚗');
                 onAddXp(40, "Entered Sports Sedan on Highway! 🚗");
               }}
-              className="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow"
+              className="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer"
             >
               🚗 Drive Car
             </button>
@@ -1077,7 +1160,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
               <button
                 onClick={() => {
                   if (playerState.current.isGrounded) {
-                    playerState.current.vy = 0.25;
+                    playerState.current.vy = 0.26;
                     playerState.current.isGrounded = false;
                     sound.playClick();
                   }
