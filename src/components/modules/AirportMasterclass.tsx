@@ -3,7 +3,9 @@ import {
   airportSteps, 
   FLIGHT_ROUTES, 
   TRAVEL_VOCABULARY_DICTIONARY,
-  FlightRouteOption 
+  VISA_INTERVIEW_SCENARIOS,
+  FlightRouteOption,
+  VisaScenarioOption
 } from '../../data/airportData';
 import { mentors } from '../../data/mentorsData';
 import { AudioSpeakButton } from '../AudioSpeakButton';
@@ -29,7 +31,9 @@ import {
   MapPin,
   Building2,
   DoorOpen,
-  UserCheck
+  UserCheck,
+  Fingerprint,
+  Award
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -40,8 +44,28 @@ interface AirportMasterclassProps {
 export const AirportMasterclass: React.FC<AirportMasterclassProps> = ({ onAddXp }) => {
   const [selectedRoute, setSelectedRoute] = useState<FlightRouteOption>(FLIGHT_ROUTES[0]);
   const [selectedStepIndex, setSelectedStepIndex] = useState<number>(0);
-  const [activeTab, setActiveTab] = useState<'walkthrough' | 'cabin_lavatory' | 'luggage_security' | 'boarding_pass' | 'vocab_dictionary'>('walkthrough');
+  const [activeTab, setActiveTab] = useState<'walkthrough' | 'visa_immigration_sim' | 'cabin_lavatory' | 'luggage_security' | 'boarding_pass' | 'vocab_dictionary'>('visa_immigration_sim');
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+
+  // Visa & Immigration Simulation State
+  const [selectedVisaIdx, setSelectedVisaIdx] = useState<number>(0);
+  const [selectedStyleIdx, setSelectedStyleIdx] = useState<number>(0);
+  const [isFingerprintVerified, setIsFingerprintVerified] = useState<boolean>(false);
+
+  const activeVisaScenario = VISA_INTERVIEW_SCENARIOS[selectedVisaIdx] || VISA_INTERVIEW_SCENARIOS[0];
+  const activeResponse = activeVisaScenario.responseStyles[selectedStyleIdx] || activeVisaScenario.responseStyles[0];
+
+  const handleVerifyBiometrics = () => {
+    sound.playSuccess();
+    setIsFingerprintVerified(true);
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.5 },
+      colors: ['#38bdf8', '#818cf8', '#34d399', '#fbbf24']
+    });
+    onAddXp(50, `Passed ${activeVisaScenario.title} & Verified Biometrics! 🛂✨`);
+  };
 
   const currentStep = airportSteps[selectedStepIndex];
 
@@ -69,15 +93,15 @@ export const AirportMasterclass: React.FC<AirportMasterclassProps> = ({ onAddXp 
         <div className="space-y-2 max-w-2xl">
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 font-bold text-xs border border-blue-500/40 flex items-center gap-1.5">
-              <Plane className="w-3.5 h-3.5" /> AIRPORT & FLIGHT PRACTICAL EXPEDITION
+              <Plane className="w-3.5 h-3.5" /> 2D ANIME AIRPORT & VISA EXPEDITION
             </span>
-            <span className="text-xs text-amber-300 font-bold">India & International Flights</span>
+            <span className="text-xs text-amber-300 font-bold">Consular Visa & Airport Customs</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-            The Full Airport & In-Flight Journey ✈️🇮🇳🌍
+            Airport, Visa Interview & In-Flight Journey ✈️🛂🌍
           </h1>
           <p className="text-slate-300 text-sm leading-relaxed">
-            Experience the real journey step-by-step: Showing your ticket & Aadhaar/Passport to CISF security, dropping luggage on conveyor scales, walking through security arches, boarding seat 14A, and testing airplane vacuum lavatories!
+            Step into the 2D anime border booth! Master real F-1 Student and B1/B2 tourist visa interviews, biometric fingerprint scanners, luggage weight scales, seat 14A, and vacuum lavatories!
           </p>
         </div>
 
@@ -136,11 +160,12 @@ export const AirportMasterclass: React.FC<AirportMasterclassProps> = ({ onAddXp 
       {/* Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto no-scrollbar">
         {[
+          { id: 'visa_immigration_sim', label: '🛂 2D Anime Visa & Immigration Lab', icon: <Fingerprint className="w-4 h-4" /> },
           { id: 'walkthrough', label: '🚶 Step-by-Step Airport Pipeline', icon: <Compass className="w-4 h-4" /> },
           { id: 'cabin_lavatory', label: '✈️ In-Flight Seat 14A & Lavatory', icon: <Plane className="w-4 h-4" /> },
           { id: 'luggage_security', label: '🧳 Luggage Scale & CISF/TSA Tray', icon: <Scale className="w-4 h-4" /> },
           { id: 'boarding_pass', label: '🎫 Boarding Pass Decoder', icon: <Ticket className="w-4 h-4" /> },
-          { id: 'vocab_dictionary', label: '📖 Travel Terms & Meanings Dictionary', icon: <BookOpen className="w-4 h-4" /> }
+          { id: 'vocab_dictionary', label: '📖 Travel Terms & Meanings', icon: <BookOpen className="w-4 h-4" /> }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -159,6 +184,215 @@ export const AirportMasterclass: React.FC<AirportMasterclassProps> = ({ onAddXp 
           </button>
         ))}
       </div>
+
+      {/* TAB 0: 2D ANIME VISA INTERVIEW & IMMIGRATION SIMULATOR */}
+      {activeTab === 'visa_immigration_sim' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* 2D Anime Artwork Banner */}
+          <div className="relative rounded-3xl overflow-hidden border-2 border-blue-500/40 shadow-2xl bg-slate-950">
+            <img
+              src="/images/anime_airport_immigration_visa_interview.jpg"
+              alt="2D Anime Airport Immigration & Visa Interview"
+              className="w-full h-auto object-cover max-h-[420px] mx-auto hover:scale-[1.01] transition-transform duration-300"
+            />
+            <div className="absolute bottom-3 left-3 right-3 bg-slate-950/90 backdrop-blur-md px-4 py-3 rounded-2xl text-xs border border-blue-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🛂✨</span>
+                <span className="text-blue-200 font-extrabold">
+                  2D Anime Consular & CBP Border Control: Document Handover • Biometric Fingerprint Scanner • Answering Officer Prompts
+                </span>
+              </div>
+              <span className="text-amber-300 font-mono text-[11px] font-bold">100% Practical Speaking</span>
+            </div>
+          </div>
+
+          {/* Scenario Selector Grid */}
+          <div className="bg-slate-900/90 border-2 border-slate-800 rounded-3xl p-5 shadow-xl space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <label className="text-xs font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                <Fingerprint className="w-4 h-4 text-blue-400" />
+                Select Visa & Immigration Scenario ({VISA_INTERVIEW_SCENARIOS.length} Real-World Simulations):
+              </label>
+              <span className="text-xs text-slate-400">Embassy Interviews & Airport CBP Entry</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+              {VISA_INTERVIEW_SCENARIOS.map((scen, idx) => {
+                const isSelected = selectedVisaIdx === idx;
+                return (
+                  <button
+                    key={scen.id}
+                    onClick={() => {
+                      sound.playClick();
+                      setSelectedVisaIdx(idx);
+                      setSelectedStyleIdx(0);
+                      setIsFingerprintVerified(false);
+                    }}
+                    className={`p-3.5 rounded-2xl border-2 text-left transition-all relative ${
+                      isSelected
+                        ? 'bg-blue-950/60 border-blue-400 text-white shadow-lg ring-2 ring-blue-500/30'
+                        : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">
+                        {scen.badge}
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-xs text-white mt-1.5 line-clamp-1">{scen.title}</h4>
+                    <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">{scen.context}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Active Scenario Simulator Area */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left 5 Cols: Officer Prompt & Document Verification */}
+            <div className="lg:col-span-5 space-y-5">
+              <div className="bg-slate-900 border-2 border-blue-500/30 rounded-3xl p-6 shadow-2xl space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">
+                      OFFICER INTERVIEW BOOTH
+                    </span>
+                    <h3 className="text-base font-black text-white">{activeVisaScenario.title}</h3>
+                  </div>
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 font-bold">
+                    {activeVisaScenario.visaType}
+                  </span>
+                </div>
+
+                {/* Officer Dialogue Bubble */}
+                <div className="bg-slate-950 border border-blue-500/40 p-4 rounded-2xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black text-amber-300 flex items-center gap-1">
+                      <span>👮‍♂️ Consular / CBP Officer:</span>
+                    </span>
+                    <AudioSpeakButton text={activeVisaScenario.officerQuestion} />
+                  </div>
+                  <p className="text-sm text-white font-bold leading-relaxed italic">
+                    "{activeVisaScenario.officerQuestion}"
+                  </p>
+                  <p className="text-[11px] text-slate-400 pt-1">
+                    Tone: {activeVisaScenario.officerTone}
+                  </p>
+                </div>
+
+                {/* Required Documents Checklist */}
+                <div className="space-y-2">
+                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                    Required Documents in Hand:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {activeVisaScenario.requiredDocuments.map((doc, i) => (
+                      <span
+                        key={i}
+                        className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-300 flex items-center gap-1"
+                      >
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                        {doc}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Biometric Verification Trigger */}
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-950/60 to-indigo-950/60 border border-blue-500/30 text-center space-y-3">
+                  <div className="text-3xl">🖨️👆</div>
+                  <div>
+                    <h4 className="font-bold text-xs text-white">Biometric Fingerprint & Passport Stamp</h4>
+                    <p className="text-[11px] text-slate-300 mt-0.5">
+                      Place your four fingers on the glowing green scanner.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={handleVerifyBiometrics}
+                    className={`w-full py-2.5 px-4 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
+                      isFingerprintVerified
+                        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
+                        : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg active:scale-95'
+                    }`}
+                  >
+                    <Fingerprint className="w-4 h-4" />
+                    <span>{isFingerprintVerified ? '✓ Biometrics Verified & Visa Approved!' : 'Scan Fingerprints (*BEEP*) + 50 XP'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Right 7 Cols: Response Styles, Breakdown & Voice Practice */}
+            <div className="lg:col-span-7 space-y-5">
+              <div className="bg-slate-900 border-2 border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <h3 className="text-sm font-black text-amber-300 uppercase tracking-wider">
+                    Choose Your Answering Style ({activeVisaScenario.responseStyles.length} Styles):
+                  </h3>
+                  <span className="text-xs text-slate-400">Master Real Spoken English</span>
+                </div>
+
+                {/* Style Selector Tabs */}
+                <div className="flex flex-wrap gap-2">
+                  {activeVisaScenario.responseStyles.map((res, i) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        sound.playClick();
+                        setSelectedStyleIdx(i);
+                      }}
+                      className={`py-2 px-3 rounded-xl text-xs font-black border transition-all ${
+                        selectedStyleIdx === i
+                          ? res.isSafe
+                            ? 'bg-blue-600 text-white border-blue-400 shadow-md ring-2 ring-blue-400/30'
+                            : 'bg-rose-600 text-white border-rose-400 shadow-md ring-2 ring-rose-400/30'
+                          : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+                      }`}
+                    >
+                      <span>{res.styleName}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Active Response Review Card */}
+                <div className={`p-5 rounded-2xl border-2 space-y-3 ${
+                  activeResponse.isSafe
+                    ? 'bg-slate-950 border-blue-500/40'
+                    : 'bg-rose-950/30 border-rose-500/60'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${
+                      activeResponse.isSafe ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
+                    }`}>
+                      {activeResponse.badge}
+                    </span>
+                    <AudioSpeakButton text={activeResponse.text} />
+                  </div>
+
+                  <p className="text-sm text-slate-100 font-semibold leading-relaxed">
+                    "{activeResponse.text}"
+                  </p>
+
+                  <div className={`p-3 rounded-xl text-xs leading-relaxed ${
+                    activeResponse.isSafe ? 'bg-blue-950/50 text-blue-200 border border-blue-500/20' : 'bg-rose-950/60 text-rose-200 border border-rose-500/30'
+                  }`}>
+                    <span className="font-bold block mb-0.5">{activeResponse.isSafe ? '💡 Why this answer succeeds:' : '⚠️ Why this triggers rejection:'}</span>
+                    {activeResponse.whyGood}
+                  </div>
+                </div>
+
+                {/* Voice Speech Microphone Practice */}
+                <VoiceSpeechPractice
+                  targetPhrase={activeResponse.text}
+                  phraseMeaning={`Practice speaking your ${activeResponse.styleName} answer clearly for the officer!`}
+                  onSuccess={() => onAddXp(35, `Spoke flawless response for ${activeVisaScenario.title}! 🎙️`)}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TAB 1: STEP-BY-STEP AIRPORT PIPELINE */}
       {activeTab === 'walkthrough' && (

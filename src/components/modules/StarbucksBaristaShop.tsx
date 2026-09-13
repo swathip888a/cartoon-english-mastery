@@ -137,7 +137,7 @@ export const StarbucksBaristaShop: React.FC<StarbucksBaristaShopProps> = ({ onAd
 
   const dialoguePhrasings = [
     {
-      styleName: "🌟 Polite & Clear (Standard)",
+      styleName: "🌟 Polite & Clear",
       badge: "Best for Beginners",
       script: `Hi! Can I please get a ${customSize} ${selectedDrink.name} with ${customMilk}${
         isEspressoBased ? `, ${customRoast}` : hasEspressoShotAddon ? `, ${customRoast}` : ''
@@ -148,8 +148,8 @@ export const StarbucksBaristaShop: React.FC<StarbucksBaristaShopProps> = ({ onAd
       }?`
     },
     {
-      styleName: "⚡ Fast & Natural (Casual Native)",
-      badge: "Everyday American Style",
+      styleName: "⚡ Fast & Natural",
+      badge: "Everyday Native",
       script: `Hey! Could I grab a ${customSize} ${selectedDrink.name} made with ${customMilk}${
         isEspressoBased ? `, ${customRoast}` : hasEspressoShotAddon ? `, add a shot of ${customRoast}` : ''
       }${syrupPumps > 0 ? `, ${syrupPumps} pumps of ${customSyrup}` : ''}${
@@ -159,7 +159,7 @@ export const StarbucksBaristaShop: React.FC<StarbucksBaristaShopProps> = ({ onAd
       }`
     },
     {
-      styleName: "🚗 Drive-thru Barista Shorthand",
+      styleName: "🚗 Drive-thru Shorthand",
       badge: "Barista Pro Level",
       script: `Good morning! I'd like a ${customSize} ${selectedDrink.name}, sub ${customMilk}${
         isEspressoBased ? `, ${customRoast}` : hasEspressoShotAddon ? `, add a single ${customRoast}` : ''
@@ -168,6 +168,44 @@ export const StarbucksBaristaShop: React.FC<StarbucksBaristaShopProps> = ({ onAd
       }${hasExtraDrizzle ? ', extra caramel drizzle' : ''}${
         includeFood ? `, and one ${selectedFood.name} ${foodWarmed ? 'warmed' : ''} please.` : ' please.'
       }`
+    },
+    {
+      styleName: "🎀 Cheerful & Sweet",
+      badge: "Cute Anime Style",
+      script: `Hello! May I please have a delicious ${customSize} ${selectedDrink.name} with ${customMilk}${
+        isEspressoBased ? `, ${customRoast}` : hasEspressoShotAddon ? `, with an extra shot of ${customRoast}` : ''
+      }${syrupPumps > 0 ? `, and ${syrupPumps} pumps of ${customSyrup}` : ''}${
+        hasExtraColdFoam ? ', topped with a fluffy cloud of Vanilla Sweet Cold Foam' : ''
+      }${hasExtraDrizzle ? ', and yummy caramel drizzle' : ''}${
+        includeFood ? `, plus a warm ${selectedFood.name}` : ''
+      }! Thank you so much!`
+    },
+    {
+      styleName: "💼 Executive Quick Rush",
+      badge: "Business Corporate",
+      script: `Hi, I need a ${customSize} ${selectedDrink.name} with ${customMilk}${
+        isEspressoBased ? `, ${customRoast}` : hasEspressoShotAddon ? `, 1 shot of ${customRoast}` : ''
+      }${syrupPumps > 0 ? `, ${syrupPumps} pumps ${customSyrup}` : ''}${
+        hasExtraColdFoam ? ', cold foam' : ''
+      }${hasExtraDrizzle ? ', caramel drizzle' : ''}${
+        includeFood ? `, and a warmed ${selectedFood.name} to go` : ' to go'
+      }, please. Thanks.`
+    },
+    {
+      styleName: "🏖️ Chill & Laid-Back",
+      badge: "West Coast Vibe",
+      script: `What's up! Lemme get a ${customSize} ${selectedDrink.name} on ${customMilk}${
+        isEspressoBased ? `, ${customRoast}` : hasEspressoShotAddon ? `, throw in a ${customRoast} shot` : ''
+      }${syrupPumps > 0 ? `, ${syrupPumps} pumps of ${customSyrup}` : ''}${
+        hasExtraColdFoam ? ', sweet cold foam on top' : ''
+      }${hasExtraDrizzle ? ', caramel drizzle' : ''}${
+        includeFood ? `, and hook me up with a toasted ${selectedFood.name}` : ''
+      }. Appreciate it!`
+    },
+    {
+      styleName: "📱 Mobile Pickup Check-in",
+      badge: "App Order Pickup",
+      script: `Hi there! I'm here to pick up a mobile order for Swathi — a ${customSize} ${selectedDrink.name}${includeFood ? ` and ${selectedFood.name}` : ''}. Thank you!`
     }
   ];
 
@@ -1211,7 +1249,7 @@ export const StarbucksBaristaShop: React.FC<StarbucksBaristaShopProps> = ({ onAd
                     <span>🔄 Switch Style</span>
                   </button>
                 </div>
-                <div className="flex gap-1.5">
+                <div className="flex flex-wrap gap-1.5">
                   {dialoguePhrasings.map((d, idx) => (
                     <button
                       key={idx}
@@ -1219,13 +1257,13 @@ export const StarbucksBaristaShop: React.FC<StarbucksBaristaShopProps> = ({ onAd
                         sound.playClick();
                         setDialogueStyleIndex(idx);
                       }}
-                      className={`flex-1 py-1.5 px-2 rounded-xl text-[10px] font-black border transition-all ${
+                      className={`py-1.5 px-2.5 rounded-xl text-[10px] font-black border transition-all ${
                         dialogueStyleIndex % dialoguePhrasings.length === idx
-                          ? 'bg-emerald-500 text-slate-950 border-emerald-400'
-                          : 'bg-slate-950 text-slate-400 border-slate-800'
+                          ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md ring-2 ring-emerald-400/30'
+                          : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
                       }`}
                     >
-                      {d.styleName.split(' ')[0]} {d.styleName.split(' ')[1]}
+                      {d.styleName}
                     </button>
                   ))}
                 </div>

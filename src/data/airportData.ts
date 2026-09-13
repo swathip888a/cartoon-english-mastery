@@ -384,3 +384,183 @@ export const airportSteps: AirportStep[] = [
     proSecrets: 'Put a bright neon ribbon or cute sticker on your suitcase so you can spot it in 2 seconds on the carousel among 200 black bags!'
   }
 ];
+
+// 2D Anime Visa Interview & Airport Immigration Simulation Scenarios
+export interface VisaScenarioOption {
+  id: string;
+  category: 'f1_student' | 'tourist_b1b2' | 'h1b_work' | 'airport_cbp';
+  title: string;
+  visaType: string;
+  badge: string;
+  officerQuestion: string;
+  officerTone: string;
+  context: string;
+  requiredDocuments: string[];
+  responseStyles: {
+    styleName: string;
+    badge: string;
+    text: string;
+    whyGood: string;
+    isSafe: boolean;
+  }[];
+}
+
+export const VISA_INTERVIEW_SCENARIOS: VisaScenarioOption[] = [
+  {
+    id: 'f1_student_purpose',
+    category: 'f1_student',
+    title: '🎓 F-1 Student Visa: University & Major Intent',
+    visaType: 'F-1 Academic Student Visa',
+    badge: 'Embassy Consular Interview',
+    officerQuestion: 'Why did you choose this specific university, and what is your study plan after graduation?',
+    officerTone: 'Stern, attentive consular officer inspecting your I-20 and academic transcripts.',
+    context: 'The consular officer wants to verify genuine academic intent and strong ties to return home after graduation.',
+    requiredDocuments: ['Valid Passport', 'Form I-20', 'SEVIS Fee Receipt (I-901)', 'DS-160 Confirmation', 'Financial Bank Affidavit'],
+    responseStyles: [
+      {
+        styleName: '🌟 Polite & Comprehensive (Standard Best)',
+        badge: 'Recommended Answer',
+        text: 'I chose this university because of their renowned computer science curriculum and specialized AI research lab under Dr. Miller. After completing my 2-year Master’s degree, I plan to return to India to work as a software architect in Bangalore’s thriving tech sector.',
+        whyGood: 'Clearly states academic reasons, mentions specific professors/labs, and explicitly demonstrates non-immigrant intent to return home.',
+        isSafe: true
+      },
+      {
+        styleName: '⚡ Fast & Confident (Concise Native)',
+        badge: 'Direct & Sharp',
+        text: 'Their MS in Data Analytics has the exact machine learning curriculum I need for my career. My goal is to finish the degree and bring these cutting-edge skills back to our family business and industry in India.',
+        whyGood: 'Direct, confident eye contact, clear ties to home country.',
+        isSafe: true
+      },
+      {
+        styleName: '💼 Academic & Research-Focused',
+        badge: 'Scholar Pro',
+        text: 'The department offers hands-on distributed systems coursework that aligns directly with my undergraduate thesis. My education is fully funded through my merit scholarship and family savings, and I will be returning home immediately upon graduation.',
+        whyGood: 'Highlights academic merit, mentions solid funding, and reinforces departure intent.',
+        isSafe: true
+      },
+      {
+        styleName: '⚠️ Risky Response (Common Rejection Trap!)',
+        badge: 'NEVER SAY THIS',
+        text: 'I want to study in the US so I can get a high-paying job, get an H-1B visa, and settle down permanently in America.',
+        whyGood: '🚨 REJECTION RISK (Section 214b): Under US law, student visa applicants are presumed to have immigrant intent unless proven otherwise. Never say you want to settle permanently on a student visa!',
+        isSafe: false
+      }
+    ]
+  },
+  {
+    id: 'airport_cbp_entry',
+    category: 'airport_cbp',
+    title: '🛂 Port of Entry: Airport CBP Border Officer',
+    visaType: 'US / International Port of Entry Inspection',
+    badge: 'Airport Border Control',
+    officerQuestion: 'What is the purpose of your visit to the United States, how long are you staying, and where will you reside?',
+    officerTone: 'CBP Officer behind bulletproof glass verifying biometric fingerprint scan and customs declaration.',
+    context: 'At the airport border control booth right after deplaning your international flight.',
+    requiredDocuments: ['Passport with Valid Visa Stamp', 'Boarding Pass', 'Hotel Booking / Host Address', 'Return Flight Confirmation Ticket'],
+    responseStyles: [
+      {
+        styleName: '🌟 Polite & Clear (Standard Best)',
+        badge: 'Recommended Answer',
+        text: 'Good afternoon, Officer. I am here on vacation for 12 days to visit New York City and Boston. Here is my hotel reservation in Manhattan and my confirmed return flight ticket to Bangalore on October 24th.',
+        whyGood: 'Provides immediate clarity: purpose (vacation), exact duration (12 days), hotel address, and physical proof of return ticket.',
+        isSafe: true
+      },
+      {
+        styleName: '⚡ Fast & Direct (Casual Fluent)',
+        badge: 'Quick & Fluent',
+        text: 'Just tourism and sightseeing for two weeks! I am staying at the Marriott in Times Square, and I fly back home on the 24th.',
+        whyGood: 'Short, upbeat, answers all three questions in one fluid breath without nervous stuttering.',
+        isSafe: true
+      },
+      {
+        styleName: '💼 Business & Conference Traveler',
+        badge: 'Professional Traveler',
+        text: 'I am attending the 3-day Global Tech Summit at the Javits Center on behalf of my company, followed by 4 days of personal sightseeing. My corporate invitation letter and hotel confirmations are right here.',
+        whyGood: 'Clear business justification with supporting invitation letter ready in hand.',
+        isSafe: true
+      },
+      {
+        styleName: '⚠️ Risky Response (Triggers Secondary Inspection!)',
+        badge: 'NEVER SAY THIS',
+        text: 'I don’t really know how long I will stay... maybe a few months or a year if I find some casual cash jobs in town.',
+        whyGood: '🚨 RED FLAG: Mentioning unauthorized work or indefinite stay leads to immediate secondary questioning room and potential entry denial.',
+        isSafe: false
+      }
+    ]
+  },
+  {
+    id: 'tourist_b1b2_finance',
+    category: 'tourist_b1b2',
+    title: '🏖️ B1/B2 Tourist Visa: Travel Itinerary & Funding',
+    visaType: 'B1/B2 Visitor Visa',
+    badge: 'Consular Financial Check',
+    officerQuestion: 'Who is funding your trip, and what is your itinerary during your stay?',
+    officerTone: 'Officer reviewing bank statements, employment verification, and leave approval letter.',
+    context: 'Demonstrating financial self-sufficiency and genuine holiday itinerary.',
+    requiredDocuments: ['Passport', 'Approved Leave Letter from Employer', '6 Months Bank Statements', 'Travel Itinerary'],
+    responseStyles: [
+      {
+        styleName: '🌟 Polite & Well-Prepared (Standard Best)',
+        badge: 'Recommended Answer',
+        text: 'I am fully self-funding this 14-day holiday using my personal savings. I have 3 weeks of approved annual leave from my job as a Senior Marketing Manager, and I will be visiting the Grand Canyon and Los Angeles before returning to work.',
+        whyGood: 'Shows stable employment, approved leave, personal funds, and specific tourism sights.',
+        isSafe: true
+      },
+      {
+        styleName: '⚡ Fast & Confident (Clear Native)',
+        badge: 'Direct & Concise',
+        text: 'I am self-funding my vacation. I’ve booked a 10-day tour of California with my family, and here are our flight and hotel itineraries.',
+        whyGood: 'Brisk, transparent, and provides ready proof.',
+        isSafe: true
+      },
+      {
+        styleName: '🎀 Cheerful Family Vacationer',
+        badge: 'Enthusiastic & Polite',
+        text: 'Good morning! My spouse and I have saved for this holiday for over a year. We are visiting Disneyland and San Francisco for our wedding anniversary for two weeks!',
+        whyGood: 'Warm, authentic, and naturally explains the special occasion.',
+        isSafe: true
+      },
+      {
+        styleName: '⚠️ Risky Response (Financial Doubt Trap)',
+        badge: 'NEVER SAY THIS',
+        text: 'A friend of a friend online is paying for everything, but I have no savings or job right now.',
+        whyGood: '🚨 REJECTION RISK: Inability to prove legitimate funding sources or ties to employment results in immediate denial under Section 214(b).',
+        isSafe: false
+      }
+    ]
+  },
+  {
+    id: 'customs_cash_declaration',
+    category: 'airport_cbp',
+    title: '🛃 Customs Declaration & Baggage Inspection',
+    visaType: 'Customs & Border Protection (CBP)',
+    badge: 'Customs Baggage Check',
+    officerQuestion: 'Are you carrying any fresh fruits, plants, meats, seeds, or currency exceeding $10,000 in cash?',
+    officerTone: 'Customs officer inspecting baggage declaration form near baggage claim exit.',
+    context: 'Agricultural quarantine and currency compliance check before exiting the airport terminal.',
+    requiredDocuments: ['Customs Declaration Slip (or Mobile Passport Control app QR)', 'Checked Baggage'],
+    responseStyles: [
+      {
+        styleName: '🌟 Honest & Clear (Standard Best)',
+        badge: 'Recommended Answer',
+        text: 'No fresh fruits, meats, or plants, Officer. I only have commercially packaged snacks like sealed biscuits and chocolates. I am carrying approximately $650 in cash and international credit cards.',
+        whyGood: 'Clearly distinguishes allowed sealed snacks from prohibited raw agricultural products and gives exact safe cash estimate.',
+        isSafe: true
+      },
+      {
+        styleName: '⚡ Fast & Straightforward',
+        badge: 'Quick Clearance',
+        text: 'Nothing to declare, Officer. No agricultural items, no meat products, and under $1,000 in cash total.',
+        whyGood: 'Fast, confident, and answers all quarantine points.',
+        isSafe: true
+      },
+      {
+        styleName: '⚠️ Risky Mistake (Heavy Fines Trap!)',
+        badge: 'NEVER LIE AT CUSTOMS',
+        text: 'I have fresh mangoes, homemade raw meat sausages, and $15,000 in cash, but I marked "NO" on the form to avoid taxes.',
+        whyGood: '🚨 SEVERE PENALTY: Undeclared agricultural produce and cash over $10,000 leads to confiscation, $1,000+ fines, and potential visa revocation. Always declare everything honestly!',
+        isSafe: false
+      }
+    ]
+  }
+];
