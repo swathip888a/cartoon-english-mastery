@@ -43,7 +43,8 @@ import {
   ChevronRight,
   Send,
   UserCheck,
-  Siren
+  Building2,
+  Trees
 } from 'lucide-react';
 
 interface UltimateRealOpenWorldEngineProps {
@@ -52,7 +53,7 @@ interface UltimateRealOpenWorldEngineProps {
 }
 
 type TimeOfDay = 'day' | 'sunset' | 'night' | 'neon';
-type VehicleModel = 'sports_sedan' | 'luxury_suv' | 'police_cruiser';
+type VehicleModel = 'sports_sedan' | 'luxury_suv' | 'police_cruiser' | 'taxi_cab';
 type WeaponItem = 'unarmed' | 'phone' | 'coffee' | 'card' | 'keycard' | 'boarding_pass';
 
 interface TelltaleChoice {
@@ -196,7 +197,7 @@ class GTAAudioEngine {
 
 const gtaAudio = new GTAAudioEngine();
 
-// Procedural Textures
+// Procedural Photorealistic Canvas Textures
 function createLuxuryWoodTexture(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
@@ -244,6 +245,34 @@ function createPolishedGraniteTexture(): THREE.CanvasTexture {
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(8, 8);
+  return tex;
+}
+
+function createBuildingFacadeTexture(windowGlowColor: string = '#fef08a'): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Modern Office Windows Grid
+  for (let y = 16; y < 512; y += 36) {
+    for (let x = 16; x < 512; x += 32) {
+      const isLit = Math.random() > 0.35;
+      ctx.fillStyle = isLit ? windowGlowColor : '#1e293b';
+      ctx.fillRect(x, y, 22, 24);
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, 22, 24);
+    }
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(3, 8);
   return tex;
 }
 
@@ -351,6 +380,31 @@ function createAirportFidsTexture(): THREE.CanvasTexture {
   return new THREE.CanvasTexture(canvas);
 }
 
+// 3D Palm Tree Builder for GTA Vinewood Blvd
+function createPalmTreeModel(): THREE.Group {
+  const palm = new THREE.Group();
+  
+  // Trunk
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c3d2e, roughness: 0.8 });
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.4, 9, 8), trunkMat);
+  trunk.position.y = 4.5;
+  trunk.rotation.z = (Math.random() - 0.5) * 0.12;
+  palm.add(trunk);
+
+  // Palm Fronds
+  const frondMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.6, side: THREE.DoubleSide });
+  for (let i = 0; i < 9; i++) {
+    const angle = (i / 9) * Math.PI * 2;
+    const frond = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 5.2), frondMat);
+    frond.position.set(0, 9, 0);
+    frond.rotation.y = angle;
+    frond.rotation.x = Math.PI / 3;
+    palm.add(frond);
+  }
+
+  return palm;
+}
+
 // 3D GTA Character Model Builder
 function createHumanoidModel(uniformColor: number, skinColor: number = 0xffedd5, hairColor: number = 0x3b1d11): THREE.Group {
   const group = new THREE.Group();
@@ -392,6 +446,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
   const [isFullscreenGTA, setIsFullscreenGTA] = useState<boolean>(false);
 
   // GTA 5 Player Stats & Progression
+  const [playerName] = useState<string>('Swathi');
   const [cashBalance, setCashBalance] = useState<number>(2854920);
   const [cashDelta, setCashDelta] = useState<{ amount: number; type: '+' | '-' } | null>(null);
   const [healthPercent] = useState<number>(100);
@@ -422,7 +477,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
   // Vehicle & World State
   const [isDriving, setIsDriving] = useState<boolean>(false);
   const [carSpeedKmH, setCarSpeedKmH] = useState<number>(0);
-  const [currentLocationName, setCurrentLocationName] = useState<string>('Vinewood Blvd & Bean Machine Plaza');
+  const [currentLocationName, setCurrentLocationName] = useState<string>('Vinewood Blvd & Maze Bank Plaza');
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('day');
   const [activeVehicle, setActiveVehicle] = useState<VehicleModel>('sports_sedan');
 
@@ -675,9 +730,9 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       neon: 0x0f172a
     };
     scene.background = new THREE.Color(skyColors[timeOfDay]);
-    scene.fog = new THREE.FogExp2(skyColors[timeOfDay], timeOfDay === 'day' ? 0.004 : 0.008);
+    scene.fog = new THREE.FogExp2(skyColors[timeOfDay], timeOfDay === 'day' ? 0.003 : 0.006);
 
-    const camera = new THREE.PerspectiveCamera(62, container.clientWidth / container.clientHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(62, container.clientWidth / container.clientHeight, 0.1, 1200);
     camera.position.set(0, 5, 14);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -712,28 +767,49 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       roughness: 0.25,
       metalness: 0.15
     });
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(350, 350), groundMat);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(500, 500), groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     worldGroup.add(ground);
 
     // 4-Lane Asphalt Highway
     const roadMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.25 });
-    const road = new THREE.Mesh(new THREE.PlaneGeometry(26, 320), roadMat);
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(26, 420), roadMat);
     road.position.set(18, 0.02, 0);
     road.rotation.x = -Math.PI / 2;
     worldGroup.add(road);
 
-    // Road Yellow Double Lines
-    for (let y = -150; y <= 150; y += 12) {
+    // Road Yellow Double Center Lines
+    for (let y = -200; y <= 200; y += 12) {
       const line = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 6), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
       line.position.set(18, 0.03, y);
       line.rotation.x = -Math.PI / 2;
       worldGroup.add(line);
     }
 
+    // Sidewalk Curbs along the Boulevard
+    const curbMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.8 });
+    const curbLeft = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.4, 420), curbMat);
+    curbLeft.position.set(4, 0.2, 0);
+    worldGroup.add(curbLeft);
+
+    const curbRight = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.4, 420), curbMat);
+    curbRight.position.set(32, 0.2, 0);
+    worldGroup.add(curbRight);
+
+    // Palm Trees Lining the Boulevard
+    for (let z = -180; z <= 180; z += 30) {
+      const palm1 = createPalmTreeModel();
+      palm1.position.set(33.5, 0, z);
+      worldGroup.add(palm1);
+
+      const palm2 = createPalmTreeModel();
+      palm2.position.set(2.5, 0, z + 15);
+      worldGroup.add(palm2);
+    }
+
     // Streetlamps with glowing lanterns & pointlights
-    for (let z = -120; z <= 120; z += 35) {
+    for (let z = -160; z <= 160; z += 35) {
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 7, 8), new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8 }));
       pole.position.set(32, 3.5, z);
       worldGroup.add(pole);
@@ -746,6 +822,45 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       sl.position.set(31.2, 7.0, z);
       worldGroup.add(sl);
     }
+
+    // 🏙️ GTA 5 MAZE BANK TOWER & DOWNTOWN SKYSCRAPERS
+    const facadeTex = createBuildingFacadeTexture(timeOfDay === 'night' ? '#fde047' : '#93c5fd');
+
+    // 1. Maze Bank Tower (Center-East Icon)
+    const mazeBankTower = new THREE.Mesh(
+      new THREE.CylinderGeometry(16, 18, 90, 32),
+      new THREE.MeshStandardMaterial({ map: facadeTex, metalness: 0.85, roughness: 0.15 })
+    );
+    mazeBankTower.position.set(80, 45, -40);
+    worldGroup.add(mazeBankTower);
+
+    // Maze Bank Helipad & Red FAA Beacon
+    const helipad = new THREE.Mesh(
+      new THREE.CylinderGeometry(16.5, 16.5, 1.5, 32),
+      new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.9 })
+    );
+    helipad.position.set(80, 90.5, -40);
+    worldGroup.add(helipad);
+
+    const faaBeacon = new THREE.PointLight(0xef4444, 4, 60);
+    faaBeacon.position.set(80, 93, -40);
+    worldGroup.add(faaBeacon);
+
+    // 2. Vinewood Plaza Tower 1
+    const tower1 = new THREE.Mesh(
+      new THREE.BoxGeometry(26, 65, 26),
+      new THREE.MeshStandardMaterial({ map: facadeTex, metalness: 0.8, roughness: 0.2 })
+    );
+    tower1.position.set(75, 32.5, 45);
+    worldGroup.add(tower1);
+
+    // 3. Vinewood Plaza Tower 2
+    const tower2 = new THREE.Mesh(
+      new THREE.BoxGeometry(32, 50, 22),
+      new THREE.MeshStandardMaterial({ map: facadeTex, metalness: 0.8, roughness: 0.2 })
+    );
+    tower2.position.set(-85, 25, 60);
+    worldGroup.add(tower2);
 
     // --- GTA-STYLE GLOWING IN-WORLD MISSION BEACONS ---
     // 🟢 Green Beacon (Starbucks / Bean Machine)
@@ -817,7 +932,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       sbGroup.add(tvScreen);
     });
 
-    // 👩‍🍳 3D PERSON 1: BARISTA HANA (Standing behind counter)
+    // 👩‍🍳 3D PERSON 1: BARISTA HANA
     const baristaHanaModel = createHumanoidModel(0x006241);
     baristaHanaModel.position.set(0, 0, -8.2);
     sbGroup.add(baristaHanaModel);
@@ -928,7 +1043,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
 
     // --- 3D DRIVABLE GTA VEHICLES ---
     const carGroup = new THREE.Group();
-    const carColor = activeVehicle === 'luxury_suv' ? 0x0f172a : activeVehicle === 'police_cruiser' ? 0x0284c7 : 0xef4444;
+    const carColor = activeVehicle === 'luxury_suv' ? 0x0f172a : activeVehicle === 'police_cruiser' ? 0x0284c7 : activeVehicle === 'taxi_cab' ? 0xfacc15 : 0xef4444;
     const carBody = new THREE.Mesh(
       new THREE.BoxGeometry(2.5, activeVehicle === 'luxury_suv' ? 1.3 : 0.95, 5.0),
       new THREE.MeshStandardMaterial({ color: carColor, metalness: 0.85, roughness: 0.15 })
@@ -1281,13 +1396,13 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-base font-black text-white tracking-wider uppercase font-mono">GTA V: REAL LIFE LOS SANTOS</span>
+                <span className="text-base font-black text-white tracking-wider uppercase font-mono">GTA V: REAL LOS SANTOS CITY</span>
                 <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full text-[10px] font-black">
-                  100% GTA 5 SIMULATOR
+                  MAZE BANK & VINEWOOD SKYLINE
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Play on PC Keyboard/Mouse, iPad/Tablet, or Android Touch HUD
+                Full 3D City World • Drivable Sports Cars • Boeing 787 Airport • Starbucks Reserve • 5-Star Hotel
               </p>
             </div>
           </div>
@@ -1297,7 +1412,16 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
               onClick={() => setIsFullscreenGTA(true)}
               className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow cursor-pointer uppercase font-mono"
             >
-              <Maximize2 className="w-4 h-4" /> ⛶ FULLSCREEN GTA 5 MODE
+              <Maximize2 className="w-4 h-4" /> ⛶ FULLSCREEN GTA 5
+            </button>
+            <button
+              onClick={() => {
+                sound.playClick();
+                setActiveVehicle(prev => prev === 'sports_sedan' ? 'luxury_suv' : prev === 'luxury_suv' ? 'police_cruiser' : prev === 'police_cruiser' ? 'taxi_cab' : 'sports_sedan');
+              }}
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow cursor-pointer"
+            >
+              🚗 Swap Vehicle: {activeVehicle === 'sports_sedan' ? '🏎️ Sports Coupe' : activeVehicle === 'luxury_suv' ? '🚙 Luxury SUV' : activeVehicle === 'police_cruiser' ? '🚓 Police Cruiser' : '🚕 Yellow Taxi'}
             </button>
             <button
               onClick={() => setTimeOfDay('day')}
@@ -1322,7 +1446,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       )}
 
       {/* 🏙️ FULLSCREEN / 3D GTA VIEWPORT & EXACT GTA 5 HUD */}
-      <div className={`relative overflow-hidden bg-black shadow-2xl ${isFullscreenGTA ? 'w-screen h-screen' : 'rounded-3xl border-4 border-slate-800 h-[620px]'}`}>
+      <div className={`relative overflow-hidden bg-black shadow-2xl ${isFullscreenGTA ? 'w-screen h-screen' : 'rounded-3xl border-4 border-slate-800 h-[640px]'}`}>
         <div ref={mountRef} className="w-full h-full bg-slate-950 cursor-grab active:cursor-grabbing" />
 
         {/* Fullscreen Exit Button */}
@@ -1343,7 +1467,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
               • <span className="text-emerald-400 font-bold">[W][A][S][D] / Joystick</span>: Move & Steer
             </div>
             <div className="text-slate-300">
-              • <span className="text-amber-300 font-bold">[F] / [△]</span>: Enter/Exit Cars & Airplane
+              • <span className="text-amber-300 font-bold">[F] / [△]</span>: Enter/Exit Cars & Boeing 787
             </div>
             <div className="text-slate-300">
               • <span className="text-sky-300 font-bold">[E] / [💬]</span>: Talk & Practice English
@@ -1359,7 +1483,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
 
         {/* 🌟 GTA 5 TOP-RIGHT HUD (MONEY, WANTED STARS, WEAPON) */}
         <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-1.5 pointer-events-none font-mono select-none">
-          {/* Wanted Stars (★ ★ ★ ★ ★) */}
           <div className="flex items-center gap-1 text-base">
             {[1, 2, 3, 4, 5].map(starNum => (
               <Star
@@ -1369,7 +1492,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
             ))}
           </div>
 
-          {/* GTA 5 Cash Display */}
           <div className="flex items-baseline gap-1 text-2xl sm:text-3xl font-black text-emerald-400 drop-shadow-[0_3px_3px_rgba(0,0,0,0.9)] tracking-tight">
             <span className="text-emerald-500">$</span>
             <span>{cashBalance.toLocaleString()}</span>
@@ -1401,7 +1523,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
         <div className="absolute bottom-6 left-6 z-20 flex flex-col items-start gap-1 select-none">
           <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-2xl bg-black/85 border-2 border-slate-600 backdrop-blur-md relative overflow-hidden shadow-2xl p-2 flex flex-col justify-between">
             <div className="flex items-center justify-between text-[10px] font-mono font-black text-slate-400">
-              <span className="text-amber-400">LSIA/VINEWOOD</span>
+              <span className="text-amber-400">MAZE BANK / LSIA</span>
               <span className="text-sky-400">N ▲</span>
             </div>
 
