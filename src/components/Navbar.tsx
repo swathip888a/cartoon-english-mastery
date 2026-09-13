@@ -40,7 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const levelInfo = getLevelTitle(level);
 
   const navItems: { id: ModuleCategory; label: string; icon: React.ReactNode; badge?: string }[] = [
-    { id: 'openworld', label: 'GTA Life RPG Mode', icon: <Gamepad2 className="w-4 h-4 text-emerald-400" />, badge: 'PLAY 🎮' },
+    { id: 'openworld', label: '🌍 3D Real Open-World Game', icon: <Gamepad2 className="w-4 h-4 text-emerald-400" />, badge: 'FREE ROAM 🎮' },
     { id: 'overview', label: 'Academy HQ', icon: <Compass className="w-4 h-4" /> },
     { id: 'starbucks', label: 'Starbucks & Coffee', icon: <Coffee className="w-4 h-4" />, badge: 'HOT' },
     { id: 'airport', label: 'Airport & Flight', icon: <Plane className="w-4 h-4" /> },
