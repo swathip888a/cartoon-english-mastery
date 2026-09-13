@@ -62,7 +62,9 @@ import {
   Shirt,
   Heart,
   QrCode,
-  VolumeX
+  VolumeX,
+  Banknote,
+  Film
 } from 'lucide-react';
 
 interface UltimateRealOpenWorldEngineProps {
@@ -72,7 +74,6 @@ interface UltimateRealOpenWorldEngineProps {
 
 type TimeOfDay = 'day' | 'sunset' | 'night' | 'neon';
 type VehicleType = 'sports_sedan' | 'luxury_suv';
-type GameMode = 'open_world' | 'airplane_cabin';
 
 // Procedural Photorealistic Textures
 function createLuxuryWoodTexture(): THREE.CanvasTexture {
@@ -275,7 +276,13 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
   const [currentLocationName, setCurrentLocationName] = useState<string>('Kyoto Starbucks Reserve & City Plaza');
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('day');
   const [activeVehicle, setActiveVehicle] = useState<VehicleType>('sports_sedan');
-  const [gameMode, setGameMode] = useState<GameMode>('open_world');
+
+  // Cinematic Story Walkthrough State
+  const [activeStoryScene, setActiveStoryScene] = useState<'none' | 'starbucks_movie' | 'airport_movie'>('none');
+  const [sbStoryStep, setSbStoryStep] = useState<number>(1);
+  const [airportStoryStep, setAirportStoryStep] = useState<number>(1);
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'apple_pay' | 'cash'>('card');
+  const [paymentDone, setPaymentDone] = useState<boolean>(false);
 
   // Real-World Interactive Modals
   const [showOverheadMenuModal, setShowOverheadMenuModal] = useState<boolean>(false);
@@ -983,23 +990,23 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Top Banner with Real-Time Sky, Smartphone Launcher & Sector Teleporters */}
+      {/* Top Banner with Real-Time Sky, Smartphone Launcher & Cinematic Movie Modes */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 rounded-3xl border-2 border-indigo-500/40 shadow-2xl relative overflow-hidden">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-xs font-bold uppercase tracking-wider border border-indigo-500/30">
               <Sparkles className="w-3.5 h-3.5 animate-spin text-amber-400" />
-              Ultimate 3D Real Open-World Life Simulator & Driving Engine
+              Ultimate 3D Real Open-World Life Simulator & Movie Story Engine
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1 flex items-center gap-3">
-              🌍 Real Open-World: Drive, Walk, Order & Fly!
+              🎬 Real Life RPG: Walk, Check Menus, Order, Pay & Eat!
             </h2>
             <p className="text-indigo-200/80 text-xs sm:text-sm max-w-2xl mt-0.5">
-              100% Free Roam! Experience real Starbucks ordering, international airport travel & Changi waterfall, luxury 5-star hotel check-in, highway driving, in-flight Boeing 787 cabin, and in-game smartphone!
+              100% Free Roam! Experience real Starbucks ordering with card/cash payment & sitting, airport departure journey & Jewel waterfall, in-flight Boeing 787 dining, and luxury hotel suite!
             </p>
           </div>
 
-          {/* Time of Day & Quick Sector Teleporters */}
+          {/* Time of Day & Cinematic Quick Play buttons */}
           <div className="flex flex-wrap items-center gap-2 bg-slate-950/90 p-2 rounded-2xl border border-slate-800">
             {/* Day/Night Preset Selector */}
             <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-700">
@@ -1026,70 +1033,411 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
               </button>
             </div>
 
-            {/* In-Game Smartphone Button */}
-            <button
-              onClick={() => setShowSmartphoneModal(true)}
-              className="px-3.5 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-black text-xs rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer"
-            >
-              <Smartphone className="w-4 h-4" /> 📱 Phone
-            </button>
-
-            {/* Teleport buttons */}
+            {/* Cinematic Movie Mode Buttons */}
             <button
               onClick={() => {
                 sound.playClick();
+                setActiveStoryScene('starbucks_movie');
+                setSbStoryStep(1);
                 playerState.current.x = 0;
                 playerState.current.z = -20;
                 setIsDriving(false);
                 setCurrentLocationName('Starbucks Reserve Kyoto & Roastery');
-                onAddXp(30, "Teleported to Starbucks Reserve! ☕");
               }}
-              className="px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer"
+              className="px-3 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer hover:scale-105 transition-all"
             >
-              ☕ Starbucks
+              <Film className="w-4 h-4" /> 🎬 Starbucks Movie Roleplay
             </button>
+
             <button
               onClick={() => {
                 sound.playClick();
+                setActiveStoryScene('airport_movie');
+                setAirportStoryStep(1);
                 playerState.current.x = -50;
                 playerState.current.z = 0;
                 setIsDriving(false);
                 setCurrentLocationName('Singapore Jewel Changi Rain Vortex 🛫');
-                onAddXp(40, "Teleported to Singapore Changi Airport! 🛫");
               }}
-              className="px-3 py-2 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer"
+              className="px-3 py-2 bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-black text-xs rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer hover:scale-105 transition-all"
             >
-              🛫 Airport
+              <Film className="w-4 h-4" /> 🎬 Airport Movie Journey
             </button>
+
+            {/* In-Game Smartphone Button */}
             <button
-              onClick={() => {
-                sound.playClick();
-                playerState.current.x = 0;
-                playerState.current.z = 32;
-                setIsDriving(false);
-                setCurrentLocationName('Grand Marina 5-Star Luxury Hotel 🏨');
-                onAddXp(40, "Teleported to Grand Marina Hotel Lobby! 🏨");
-              }}
-              className="px-3 py-2 bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer"
+              onClick={() => setShowSmartphoneModal(true)}
+              className="px-3 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-black text-xs rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer"
             >
-              🏨 Grand Hotel
-            </button>
-            <button
-              onClick={() => {
-                sound.playClick();
-                playerState.current.x = 18;
-                playerState.current.z = 10;
-                setIsDriving(true);
-                setCurrentLocationName('Grand City 4-Lane Highway 🚗');
-                onAddXp(40, "Entered Sports Sedan on Highway! 🚗");
-              }}
-              className="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer"
-            >
-              🚗 Drive Car
+              <Smartphone className="w-4 h-4" /> 📱 Phone
             </button>
           </div>
         </div>
       </div>
+
+      {/* 🎬 CINEMATIC STARBUCKS MOVIE RPG EXPERIENCE */}
+      {activeStoryScene === 'starbucks_movie' && (
+        <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 border-2 border-emerald-500/60 rounded-3xl p-6 shadow-2xl space-y-6 animate-fadeIn">
+          <div className="flex items-center justify-between border-b border-emerald-500/30 pb-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">☕</span>
+              <div>
+                <span className="text-xs font-black uppercase tracking-wider text-emerald-400">Cinematic RPG Story Mode</span>
+                <h3 className="text-xl sm:text-2xl font-black text-white">Full Starbucks Experience: Walk In ➔ Order ➔ Pay ➔ Sit & Eat 🥪</h3>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveStoryScene('none')}
+              className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold"
+            >
+              ✕ Exit Movie Mode
+            </button>
+          </div>
+
+          {/* Step Progress Bar */}
+          <div className="grid grid-cols-4 gap-2 text-center text-xs">
+            <div className={`p-2.5 rounded-xl font-bold border transition-all ${sbStoryStep === 1 ? 'bg-emerald-500 text-slate-950 border-white shadow' : sbStoryStep > 1 ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>
+              1. Check 4K Menus
+            </div>
+            <div className={`p-2.5 rounded-xl font-bold border transition-all ${sbStoryStep === 2 ? 'bg-emerald-500 text-slate-950 border-white shadow' : sbStoryStep > 2 ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>
+              2. Speak Order
+            </div>
+            <div className={`p-2.5 rounded-xl font-bold border transition-all ${sbStoryStep === 3 ? 'bg-emerald-500 text-slate-950 border-white shadow' : sbStoryStep > 3 ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>
+              3. Pay Card/Cash
+            </div>
+            <div className={`p-2.5 rounded-xl font-bold border transition-all ${sbStoryStep === 4 ? 'bg-emerald-500 text-slate-950 border-white shadow' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>
+              4. Sit & Enjoy Tasting
+            </div>
+          </div>
+
+          {/* Step 1: Check Overhead Menus */}
+          {sbStoryStep === 1 && (
+            <div className="space-y-4">
+              <div className="p-4 bg-slate-950 rounded-2xl border border-emerald-500/30 flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl font-bold flex-shrink-0">
+                  👀
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-white text-sm">Step 1: Swathi looks up at the 3 Giant 4K Overhead Digital Menu TVs</h4>
+                  <p className="text-xs text-emerald-200">
+                    "Take a moment to browse the authentic Starbucks Reserve board. Notice the size choices (Short 8oz, Tall 12oz, Grande 16oz, Venti 20oz) and specialty milk substitutions."
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <span className="font-bold text-amber-400 block mb-1">☕ Espresso Classics</span>
+                  <div>Caffè Latte — $4.95</div>
+                  <div>Caramel Macchiato — $5.45</div>
+                  <div>Blonde Vanilla Latte — $5.25</div>
+                </div>
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <span className="font-bold text-teal-400 block mb-1">🍫 Cocoa & Cold Foam</span>
+                  <div className="text-emerald-300 font-bold">Signature Hot Choc — $4.85 ⭐</div>
+                  <div>White Hot Choc — $4.95</div>
+                  <div>Sweet Cold Foam Cloud — +$1.25</div>
+                </div>
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <span className="font-bold text-pink-400 block mb-1">🥪 Warmed Paninis</span>
+                  <div className="text-amber-300 font-bold">Tomato Mozzarella — $6.45 🔥</div>
+                  <div>Bacon Gouda Roll — $5.95</div>
+                  <div>All-Butter Croissant — $3.85</div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  sound.playClick();
+                  setSbStoryStep(2);
+                }}
+                className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-2xl shadow-xl text-xs uppercase tracking-wider cursor-pointer"
+              >
+                ➔ Next: Walk to Cashier Counter & Order
+              </button>
+            </div>
+          )}
+
+          {/* Step 2: Speak Order */}
+          {sbStoryStep === 2 && (
+            <div className="space-y-4">
+              <div className="p-4 bg-slate-950 rounded-2xl border border-emerald-500/30 flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl font-bold flex-shrink-0">
+                  👩‍💼
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white text-sm">Barista Hana:</span>
+                    <span className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full font-bold">Register 01</span>
+                  </div>
+                  <p className="text-xs text-emerald-100">
+                    "Hi there! Welcome to Starbucks Reserve. What can I get started for you today, Swathi?"
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-950 rounded-2xl border border-emerald-500/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-400">Speak Your Full Real-World Order:</span>
+                  <AudioSpeakButton text={generatedStarbucksOrder} label="Listen Target" className="bg-emerald-500 text-slate-950 font-bold text-xs px-3 py-1 rounded-xl" />
+                </div>
+                <p className="text-xs text-white font-semibold">"{generatedStarbucksOrder}"</p>
+                <VoiceSpeechPractice
+                  targetPhrase={generatedStarbucksOrder}
+                  accentColor="emerald"
+                  onSuccess={() => {
+                    sound.playSuccess();
+                    onAddXp(60, "Spoke Perfect Custom Starbucks Order! 🎤✨");
+                  }}
+                />
+              </div>
+
+              <button
+                onClick={() => {
+                  sound.playClick();
+                  setSbStoryStep(3);
+                }}
+                className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-2xl shadow-xl text-xs uppercase tracking-wider cursor-pointer"
+              >
+                ➔ Next: Pay at POS Terminal ($11.30)
+              </button>
+            </div>
+          )}
+
+          {/* Step 3: Pay with Card / Apple Pay / Cash */}
+          {sbStoryStep === 3 && (
+            <div className="space-y-4">
+              <div className="p-4 bg-slate-950 rounded-2xl border border-emerald-500/30 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <span className="font-bold text-white text-sm">Starbucks POS Touchscreen Terminal</span>
+                  <span className="text-xs font-mono font-bold text-amber-400">Total: $11.30</span>
+                </div>
+
+                <p className="text-xs text-slate-300">
+                  Choose how Swathi pays for her drink and warmed focaccia panini:
+                </p>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    onClick={() => {
+                      setPaymentMethod('card');
+                      sound.playClick();
+                    }}
+                    className={`p-3 rounded-xl border flex flex-col items-center gap-1 text-xs font-bold ${paymentMethod === 'card' ? 'bg-amber-500 text-slate-950 border-white shadow' : 'bg-slate-900 text-slate-300 border-slate-800'}`}
+                  >
+                    <CreditCard className="w-5 h-5" /> 💳 Tap Card
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPaymentMethod('apple_pay');
+                      sound.playClick();
+                    }}
+                    className={`p-3 rounded-xl border flex flex-col items-center gap-1 text-xs font-bold ${paymentMethod === 'apple_pay' ? 'bg-sky-500 text-slate-950 border-white shadow' : 'bg-slate-900 text-slate-300 border-slate-800'}`}
+                  >
+                    <Smartphone className="w-5 h-5" /> 📱 Apple Pay
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPaymentMethod('cash');
+                      sound.playClick();
+                    }}
+                    className={`p-3 rounded-xl border flex flex-col items-center gap-1 text-xs font-bold ${paymentMethod === 'cash' ? 'bg-emerald-500 text-slate-950 border-white shadow' : 'bg-slate-900 text-slate-300 border-slate-800'}`}
+                  >
+                    <Banknote className="w-5 h-5" /> 💵 Cash ($20)
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => {
+                    sound.playSuccess();
+                    setPaymentDone(true);
+                    confetti({ particleCount: 70, spread: 70 });
+                    onAddXp(50, `Paid $11.30 via ${paymentMethod.toUpperCase()}! 💳✨`);
+                  }}
+                  className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider cursor-pointer shadow-lg active:scale-95"
+                >
+                  ✓ Tap & Complete Payment (BEEP!)
+                </button>
+              </div>
+
+              {paymentDone && (
+                <button
+                  onClick={() => {
+                    sound.playClick();
+                    setSbStoryStep(4);
+                  }}
+                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-2xl shadow-xl text-xs uppercase tracking-wider cursor-pointer animate-pulse"
+                >
+                  ➔ Pick Up Order & Sit at Velvet Table
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Step 4: Sit & Enjoy Tasting */}
+          {sbStoryStep === 4 && (
+            <div className="space-y-4">
+              <div className="p-4 bg-slate-950 rounded-2xl border border-emerald-500/30 flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl font-bold flex-shrink-0">
+                  🪑
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-white text-sm">Step 4: Swathi is seated in the cozy velvet armchair by the window</h4>
+                  <p className="text-xs text-emerald-200">
+                    "Hold your warm cup, take sips, and enjoy your crispy heated mozzarella focaccia panini. Listen to the cafe background jazz."
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                {/* Sip Coffee */}
+                <div className="bg-slate-950 p-4 rounded-2xl border border-emerald-500/30 space-y-2.5">
+                  <div className="flex justify-between font-bold text-emerald-300">
+                    <span>☕ Hot Chocolate: {coffeeLiquidLevel}%</span>
+                    <button onClick={() => setCoffeeLiquidLevel(100)} className="text-[10px] text-slate-400">Refill</button>
+                  </div>
+                  <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
+                    <div className="bg-gradient-to-r from-amber-700 to-amber-500 h-full transition-all" style={{ width: `${coffeeLiquidLevel}%` }} />
+                  </div>
+                  <button
+                    disabled={coffeeLiquidLevel <= 0}
+                    onClick={() => {
+                      sound.playClick();
+                      setCoffeeLiquidLevel(prev => Math.max(0, prev - 25));
+                      if (coffeeLiquidLevel - 25 <= 0) {
+                        confetti({ particleCount: 80, spread: 80 });
+                        onAddXp(50, "Finished your entire cup of hot chocolate! ☕✨");
+                      }
+                    }}
+                    className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-black rounded-xl shadow cursor-pointer"
+                  >
+                    ☕ Take a Sip (Gulp!)
+                  </button>
+                </div>
+
+                {/* Eat Panini */}
+                <div className="bg-slate-950 p-4 rounded-2xl border border-amber-500/30 space-y-2.5">
+                  <div className="flex justify-between font-bold text-amber-300">
+                    <span>🥪 Panini: {paniniBitesLeft} Bites Left</span>
+                    <button onClick={() => setPaniniBitesLeft(4)} className="text-[10px] text-slate-400">New Order</button>
+                  </div>
+                  <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
+                    <div className="bg-gradient-to-r from-amber-500 to-yellow-400 h-full transition-all" style={{ width: `${(paniniBitesLeft / 4) * 100}%` }} />
+                  </div>
+                  <button
+                    disabled={paniniBitesLeft <= 0}
+                    onClick={() => {
+                      sound.playClick();
+                      setPaniniBitesLeft(prev => Math.max(0, prev - 1));
+                      if (paniniBitesLeft - 1 <= 0) {
+                        confetti({ particleCount: 80, spread: 80 });
+                        onAddXp(50, "Finished delicious warm Tomato Mozzarella Panini! 🥪✨");
+                      }
+                    }}
+                    className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-black rounded-xl shadow cursor-pointer"
+                  >
+                    🥪 Take a Bite (Crunch!)
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  sound.playSuccess();
+                  confetti({ particleCount: 100, spread: 80 });
+                  setActiveStoryScene('none');
+                  onAddXp(100, "Completed Full Starbucks Real Life Experience! ☕🎉");
+                }}
+                className="w-full py-3.5 bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black rounded-2xl shadow-2xl text-xs uppercase tracking-wider cursor-pointer"
+              >
+                🎉 Complete Starbucks Story (+100 XP) ➔ Return to World
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 🎬 CINEMATIC AIRPORT MOVIE RPG JOURNEY */}
+      {activeStoryScene === 'airport_movie' && (
+        <div className="bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 border-2 border-sky-500/60 rounded-3xl p-6 shadow-2xl space-y-6 animate-fadeIn">
+          <div className="flex items-center justify-between border-b border-sky-500/30 pb-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🛫</span>
+              <div>
+                <span className="text-xs font-black uppercase tracking-wider text-sky-400">Cinematic Airport Movie Journey</span>
+                <h3 className="text-xl sm:text-2xl font-black text-white">Full International Flight: DigiYatra ➔ Baggage ➔ Security ➔ Waterfall ➔ Boarding ✈️</h3>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveStoryScene('none')}
+              className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold"
+            >
+              ✕ Exit Movie Mode
+            </button>
+          </div>
+
+          {/* Airport Movie Stages */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+            <div className="bg-slate-950 p-3.5 rounded-2xl border border-sky-500/30 space-y-2">
+              <span className="font-bold text-sky-400 block">1. DigiYatra Face Scan</span>
+              <p className="text-slate-300">Facial biometric scan at terminal entrance gate.</p>
+              <button
+                onClick={() => {
+                  sound.playSuccess();
+                  onAddXp(40, "DigiYatra Facial Scan Verified! 📸");
+                }}
+                className="w-full py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl"
+              >
+                📸 Scan Face
+              </button>
+            </div>
+
+            <div className="bg-slate-950 p-3.5 rounded-2xl border border-sky-500/30 space-y-2">
+              <span className="font-bold text-amber-400 block">2. Baggage Weigh-In</span>
+              <p className="text-slate-300">Weigh luggage (18.4 kg) & print SQ 529 pass.</p>
+              <button
+                onClick={() => {
+                  sound.playSuccess();
+                  setHasBoardingPass(true);
+                  onAddXp(40, "Boarding Pass Printed Seat 14A! 🎫");
+                }}
+                className="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl"
+              >
+                🎫 Print Pass
+              </button>
+            </div>
+
+            <div className="bg-slate-950 p-3.5 rounded-2xl border border-sky-500/30 space-y-2">
+              <span className="font-bold text-emerald-400 block">3. TSA Metal Arch</span>
+              <p className="text-slate-300">Trays for laptop & liquids, walk through scanner.</p>
+              <button
+                onClick={() => {
+                  sound.playSuccess();
+                  onAddXp(40, "Security Screening Cleared! 🛡️");
+                }}
+                className="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl"
+              >
+                🛡️ Walk Arch
+              </button>
+            </div>
+
+            <div className="bg-slate-950 p-3.5 rounded-2xl border border-sky-500/30 space-y-2">
+              <span className="font-bold text-pink-400 block">4. Changi Waterfall</span>
+              <p className="text-slate-300">40m Rain Vortex & board Boeing 787.</p>
+              <button
+                onClick={() => {
+                  sound.playSuccess();
+                  confetti({ particleCount: 100, spread: 80 });
+                  onAddXp(80, "Boarded Boeing 787 to Singapore! 🛫✨");
+                }}
+                className="w-full py-2 bg-pink-600 hover:bg-pink-500 text-white font-bold rounded-xl"
+              >
+                🛫 Board Flight
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 3D Viewport with Dual Joysticks & Interactive Controls */}
       <div className="relative rounded-3xl overflow-hidden border-2 border-indigo-500/40 bg-slate-950 shadow-2xl">
@@ -1111,44 +1459,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
               {isDriving ? 'Highway Cruising (Speed Limit 45 mph)' : currentLocationName}
             </p>
           </div>
-        </div>
-
-        {/* Top-Right In-World Action Screens & Hub Buttons */}
-        <div className="absolute top-4 right-4 flex flex-wrap items-center justify-end gap-2 z-20 max-w-xl">
-          <button
-            onClick={() => setShowStarbucksCustomizerModal(true)}
-            className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-xl flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            <Coffee className="w-4 h-4" />
-            ☕ Order Starbucks
-          </button>
-          <button
-            onClick={() => setShowAirportStagesModal(true)}
-            className="px-3.5 py-2 bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs rounded-xl shadow-xl flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            <Plane className="w-4 h-4" />
-            🛫 Airport Travel Hub
-          </button>
-          <button
-            onClick={() => setShowInflightModal(true)}
-            className="px-3.5 py-2 bg-indigo-500 hover:bg-indigo-400 text-white font-black text-xs rounded-xl shadow-xl flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            ✈️ In-Flight Boeing 787
-          </button>
-          <button
-            onClick={() => setShowHotelModal(true)}
-            className="px-3.5 py-2 bg-rose-500 hover:bg-rose-400 text-slate-950 font-black text-xs rounded-xl shadow-xl flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            <Hotel className="w-4 h-4" />
-            🏨 Hotel Suite
-          </button>
-          <button
-            onClick={() => setShowFashionModal(true)}
-            className="px-3.5 py-2 bg-purple-500 hover:bg-purple-400 text-white font-black text-xs rounded-xl shadow-xl flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            <Shirt className="w-4 h-4" />
-            👗 Wardrobe
-          </button>
         </div>
 
         {/* --- DUAL ON-SCREEN VIRTUAL JOYSTICKS (WORKS WITH BOTH MOUSE & MULTI-TOUCH) --- */}
@@ -1332,7 +1642,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       {showSmartphoneModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
           <div className="bg-slate-900 border-4 border-slate-700 rounded-[40px] max-w-md w-full p-6 shadow-2xl space-y-6 relative overflow-hidden text-white">
-            {/* Phone Speaker Notch */}
             <div className="w-24 h-4 bg-slate-950 rounded-full mx-auto -mt-2 mb-2 flex items-center justify-center">
               <div className="w-3 h-3 rounded-full bg-slate-800" />
             </div>
@@ -1350,32 +1659,33 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
               </button>
             </div>
 
-            {/* Smartphone Apps Grid */}
             <div className="grid grid-cols-3 gap-3 text-center text-xs">
               <button
                 onClick={() => {
                   setShowSmartphoneModal(false);
-                  setShowStarbucksCustomizerModal(true);
+                  setActiveStoryScene('starbucks_movie');
+                  setSbStoryStep(1);
                 }}
                 className="p-4 bg-emerald-950/60 border border-emerald-500/40 rounded-2xl flex flex-col items-center gap-2 hover:scale-105 transition-all cursor-pointer"
               >
                 <div className="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center text-xl font-bold">
                   ☕
                 </div>
-                <span className="font-bold text-emerald-300">Starbucks App</span>
+                <span className="font-bold text-emerald-300">Starbucks RPG</span>
               </button>
 
               <button
                 onClick={() => {
                   setShowSmartphoneModal(false);
-                  setShowAirportStagesModal(true);
+                  setActiveStoryScene('airport_movie');
+                  setAirportStoryStep(1);
                 }}
                 className="p-4 bg-sky-950/60 border border-sky-500/40 rounded-2xl flex flex-col items-center gap-2 hover:scale-105 transition-all cursor-pointer"
               >
                 <div className="w-10 h-10 rounded-xl bg-sky-500 text-slate-950 flex items-center justify-center text-xl font-bold">
                   ✈️
                 </div>
-                <span className="font-bold text-sky-300">Flight Board</span>
+                <span className="font-bold text-sky-300">Airport Journey</span>
               </button>
 
               <button
@@ -1390,49 +1700,8 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
                 </div>
                 <span className="font-bold text-rose-300">Hotel Key</span>
               </button>
-
-              <button
-                onClick={() => {
-                  setShowSmartphoneModal(false);
-                  setShowFashionModal(true);
-                }}
-                className="p-4 bg-purple-950/60 border border-purple-500/40 rounded-2xl flex flex-col items-center gap-2 hover:scale-105 transition-all cursor-pointer"
-              >
-                <div className="w-10 h-10 rounded-xl bg-purple-500 text-white flex items-center justify-center text-xl font-bold">
-                  👗
-                </div>
-                <span className="font-bold text-purple-300">Wardrobe</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setShowSmartphoneModal(false);
-                  setShowInflightModal(true);
-                }}
-                className="p-4 bg-indigo-950/60 border border-indigo-500/40 rounded-2xl flex flex-col items-center gap-2 hover:scale-105 transition-all cursor-pointer"
-              >
-                <div className="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center text-xl font-bold">
-                  🎫
-                </div>
-                <span className="font-bold text-indigo-300">Boeing Cabin</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  sound.playSuccess();
-                  confetti({ particleCount: 50, spread: 60 });
-                  onAddXp(30, "Captured in-game selfie postcard! 📸✨");
-                }}
-                className="p-4 bg-amber-950/60 border border-amber-500/40 rounded-2xl flex flex-col items-center gap-2 hover:scale-105 transition-all cursor-pointer"
-              >
-                <div className="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center text-xl font-bold">
-                  📸
-                </div>
-                <span className="font-bold text-amber-300">Camera 4K</span>
-              </button>
             </div>
 
-            {/* In-Game Apple Wallet Card preview */}
             <div className="p-4 bg-gradient-to-r from-sky-900 to-indigo-950 rounded-2xl border border-sky-500/40 space-y-2 text-xs">
               <div className="flex items-center justify-between text-sky-300 font-bold">
                 <span>SINGAPORE AIRLINES (SQ 529)</span>
@@ -1443,346 +1712,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
                 <div>SEAT: 14A</div>
               </div>
               <div className="text-[10px] text-sky-200">GATE B12 • BOARDING 14:15 • CHANGI JEWEL TERMINAL 3</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ✈️ IN-FLIGHT 3D AIRPLANE CABIN MODAL (Boeing 787 Dreamliner) */}
-      {showInflightModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
-          <div className="bg-slate-900 border-2 border-indigo-500/60 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl space-y-6 my-8">
-            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
-              <div>
-                <span className="text-xs font-black uppercase tracking-wider text-indigo-400">Singapore Airlines Boeing 787 Dreamliner</span>
-                <h3 className="text-2xl font-black text-white">In-Flight Cabin Experience & Meal Service ✈️</h3>
-              </div>
-              <button
-                onClick={() => setShowInflightModal(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold cursor-pointer"
-              >
-                ✕ Back to World
-              </button>
-            </div>
-
-            {/* Inflight Seat 14A Simulator */}
-            <div className="p-4 bg-slate-950 rounded-2xl border border-indigo-500/30 flex items-start gap-4">
-              <div className="w-12 h-12 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-2xl font-bold flex-shrink-0">
-                👩‍✈️
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-white text-sm">Flight Attendant Chloe:</span>
-                  <span className="text-[10px] px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded-full font-bold">Cabin Service</span>
-                </div>
-                <p className="text-xs text-indigo-100">
-                  "Good afternoon, Ma'am! We are now serving our dinner service. Would you prefer our Roasted Herb Chicken with Potatoes, or our Creamy Truffle Pasta?"
-                </p>
-              </div>
-            </div>
-
-            {/* Inflight Menu Options */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
-                <h4 className="font-bold text-amber-400">🍽️ Main Entrée Choice</h4>
-                <button
-                  onClick={() => {
-                    sound.playSuccess();
-                    onAddXp(40, "Ordered Creamy Truffle Pasta Dinner! 🍝");
-                  }}
-                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-left px-3 cursor-pointer"
-                >
-                  🍝 Option A: Creamy Truffle Pasta & Garlic Bread
-                </button>
-                <button
-                  onClick={() => {
-                    sound.playSuccess();
-                    onAddXp(40, "Ordered Herb Roasted Chicken! 🍗");
-                  }}
-                  className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-left px-3 cursor-pointer"
-                >
-                  🍗 Option B: Roasted Herb Chicken with Potatoes
-                </button>
-              </div>
-
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
-                <h4 className="font-bold text-sky-400">🥤 In-Flight Beverages & Amenities</h4>
-                <button
-                  onClick={() => {
-                    sound.playSuccess();
-                    onAddXp(30, "Ordered Sparkling Water & Lemon! 🍋");
-                  }}
-                  className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-left px-3 cursor-pointer"
-                >
-                  🍋 Sparkling Water with Lemon Slice
-                </button>
-                <button
-                  onClick={() => {
-                    sound.playSuccess();
-                    onAddXp(30, "Requested Warm Airplane Blanket! 🛏️");
-                  }}
-                  className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-left px-3 cursor-pointer"
-                >
-                  🛏️ Request Extra Warm Blanket & Noise-Cancelling Headphones
-                </button>
-              </div>
-            </div>
-
-            {/* In-Flight Spoken English Practice */}
-            <div className="p-4 bg-slate-950 rounded-2xl border border-indigo-500/30 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-white text-xs">Practice In-Flight Meal Ordering:</span>
-                <AudioSpeakButton text={inflightMealScript} label="Listen" className="bg-indigo-500 text-white text-xs px-3 py-1 rounded-xl" />
-              </div>
-              <p className="text-xs text-indigo-200">"{inflightMealScript}"</p>
-              <VoiceSpeechPractice
-                targetPhrase={inflightMealScript}
-                accentColor="indigo"
-                onSuccess={() => {
-                  sound.playSuccess();
-                  confetti({ particleCount: 80, spread: 70 });
-                  onAddXp(80, "Mastered In-Flight Spoken English! ✈️✨");
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 👗 FASHION WARDROBE STUDIO MODAL */}
-      {showFashionModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
-          <div className="bg-slate-900 border-2 border-purple-500/60 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-6 my-8">
-            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
-              <div>
-                <span className="text-xs font-black uppercase tracking-wider text-purple-400">Luxury Fashion Boutique</span>
-                <h3 className="text-2xl font-black text-white">3D Character Wardrobe Studio 👗</h3>
-              </div>
-              <button
-                onClick={() => setShowFashionModal(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold cursor-pointer"
-              >
-                ✕ Back to World
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <button
-                onClick={() => {
-                  setOutfitColor(0xec4899);
-                  sound.playClick();
-                }}
-                className="p-3 bg-pink-950/60 border border-pink-500/40 rounded-xl text-left font-bold text-pink-300 hover:scale-105 transition-all"
-              >
-                🌸 Rose Gold Executive Blazer
-              </button>
-              <button
-                onClick={() => {
-                  setOutfitColor(0x38bdf8);
-                  sound.playClick();
-                }}
-                className="p-3 bg-sky-950/60 border border-sky-500/40 rounded-xl text-left font-bold text-sky-300 hover:scale-105 transition-all"
-              >
-                💎 Singapore Travel Trench Coat
-              </button>
-              <button
-                onClick={() => {
-                  setOutfitColor(0xf59e0b);
-                  sound.playClick();
-                }}
-                className="p-3 bg-amber-950/60 border border-amber-500/40 rounded-xl text-left font-bold text-amber-300 hover:scale-105 transition-all"
-              >
-                🍂 Kyoto Autumn Roastery Jacket
-              </button>
-              <button
-                onClick={() => {
-                  setOutfitColor(0x10b981);
-                  sound.playClick();
-                }}
-                className="p-3 bg-emerald-950/60 border border-emerald-500/40 rounded-xl text-left font-bold text-emerald-300 hover:scale-105 transition-all"
-              >
-                🌿 Emerald Siren Silk Shirt
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ☕ STARBUCKS AUTHENTIC CUSTOM ORDER ENGINE MODAL */}
-      {showStarbucksCustomizerModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
-          <div className="bg-slate-900 border-2 border-emerald-500/60 rounded-3xl max-w-4xl w-full p-6 sm:p-8 shadow-2xl space-y-6 my-8">
-            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
-              <div>
-                <span className="text-xs font-black uppercase tracking-wider text-emerald-400">Starbucks Reserve Customizer</span>
-                <h3 className="text-2xl font-black text-white">Authentic Drink & Bakery Order Engine ☕</h3>
-              </div>
-              <button
-                onClick={() => setShowStarbucksCustomizerModal(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold cursor-pointer"
-              >
-                ✕ Back to World
-              </button>
-            </div>
-
-            {/* Customizer Controls Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
-              {/* 1. Drink Base */}
-              <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-                <label className="font-bold text-emerald-400 block">1. Beverage Base:</label>
-                {['Signature Hot Chocolate', 'Caffè Latte', 'Caramel Macchiato', 'Iced Blonde Vanilla Latte', 'White Hot Chocolate'].map((drink) => (
-                  <button
-                    key={drink}
-                    onClick={() => {
-                      setDrinkBase(drink);
-                      sound.playClick();
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl font-bold transition-all ${drinkBase === drink ? 'bg-emerald-500 text-slate-950 shadow' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'}`}
-                  >
-                    {drink}
-                  </button>
-                ))}
-              </div>
-
-              {/* 2. Cup Size */}
-              <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-                <label className="font-bold text-amber-400 block">2. Cup Size:</label>
-                {['Short (8oz)', 'Tall (12oz)', 'Grande (16oz)', 'Venti (20oz)'].map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => {
-                      setDrinkSize(size);
-                      sound.playClick();
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl font-bold transition-all ${drinkSize === size ? 'bg-amber-500 text-slate-950 shadow' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'}`}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-
-              {/* 3. Milk Choice */}
-              <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-                <label className="font-bold text-sky-400 block">3. Milk Substitution:</label>
-                {['Oat Milk (Oatly Barista)', 'Almond Milk', 'Whole Milk', 'Coconut Milk'].map((milk) => (
-                  <button
-                    key={milk}
-                    onClick={() => {
-                      setMilkType(milk);
-                      sound.playClick();
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl font-bold transition-all ${milkType === milk ? 'bg-sky-500 text-slate-950 shadow' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'}`}
-                  >
-                    {milk}
-                  </button>
-                ))}
-              </div>
-
-              {/* 4. Espresso & Syrup Pumps */}
-              <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-                <label className="font-bold text-pink-400 block">4. Espresso & Vanilla Pumps:</label>
-                <div className="flex items-center justify-between bg-slate-900 p-2 rounded-xl">
-                  <span>Pumps: {syrupPumps}</span>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => setSyrupPumps(prev => Math.max(1, prev - 1))} className="px-2 py-1 bg-slate-800 rounded font-bold">-</button>
-                    <button onClick={() => setSyrupPumps(prev => Math.min(6, prev + 1))} className="px-2 py-1 bg-slate-800 rounded font-bold">+</button>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setEspressoType('Blonde Espresso Shot (+1 Shot)')}
-                  className={`w-full text-left px-3 py-2 rounded-xl font-bold ${espressoType.includes('Blonde') ? 'bg-pink-500 text-white' : 'bg-slate-900 text-slate-300'}`}
-                >
-                  Blonde Espresso Shot ⭐
-                </button>
-              </div>
-
-              {/* 5. Toppings */}
-              <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-                <label className="font-bold text-teal-400 block">5. Cold Foam / Topping:</label>
-                {['Vanilla Sweet Cold Foam', 'Salted Caramel Cold Foam', 'Whipped Cream & Caramel Drizzle'].map((top) => (
-                  <button
-                    key={top}
-                    onClick={() => {
-                      setToppings([top]);
-                      sound.playClick();
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl font-bold ${toppings.includes(top) ? 'bg-teal-500 text-slate-950 shadow' : 'bg-slate-900 text-slate-300'}`}
-                  >
-                    {top}
-                  </button>
-                ))}
-              </div>
-
-              {/* 6. Bakery Paninis */}
-              <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-                <label className="font-bold text-amber-400 block">6. Warmed Bakery Food:</label>
-                {['Tomato & Mozzarella Focaccia Panini (Warmed Up 🔥)', 'Bacon Gouda Roll (Warmed)', 'All-Butter Croissant (Toasted)'].map((food) => (
-                  <button
-                    key={food}
-                    onClick={() => {
-                      setWarmedFood(food);
-                      sound.playClick();
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl font-bold ${warmedFood === food ? 'bg-amber-500 text-slate-950 shadow' : 'bg-slate-900 text-slate-300'}`}
-                  >
-                    {food}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Generated Natural Sentence Box */}
-            <div className="p-4 bg-slate-950 rounded-2xl border border-emerald-500/40 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Your Natural Live Spoken Order:</span>
-                <AudioSpeakButton text={generatedStarbucksOrder} label="Listen Target" className="bg-emerald-500 text-slate-950 font-bold text-xs px-3 py-1 rounded-xl" />
-              </div>
-              <p className="text-xs text-white font-semibold leading-relaxed">
-                "{generatedStarbucksOrder}"
-              </p>
-            </div>
-
-            {/* Consumable Tasting Bar */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="bg-slate-950 p-4 rounded-2xl border border-emerald-500/30 space-y-2">
-                <div className="flex justify-between font-bold text-emerald-300">
-                  <span>☕ Hot Chocolate: {coffeeLiquidLevel}%</span>
-                  <button onClick={() => setCoffeeLiquidLevel(100)} className="text-[10px] text-slate-400">Refill</button>
-                </div>
-                <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                  <div className="bg-gradient-to-r from-amber-700 to-amber-500 h-full transition-all" style={{ width: `${coffeeLiquidLevel}%` }} />
-                </div>
-                <button
-                  disabled={coffeeLiquidLevel <= 0}
-                  onClick={() => {
-                    sound.playClick();
-                    setCoffeeLiquidLevel(prev => Math.max(0, prev - 25));
-                  }}
-                  className="w-full py-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-bold rounded-xl"
-                >
-                  ☕ Sip Drink (-25%)
-                </button>
-              </div>
-
-              <div className="bg-slate-950 p-4 rounded-2xl border border-amber-500/30 space-y-2">
-                <div className="flex justify-between font-bold text-amber-300">
-                  <span>🥪 Warmed Panini: {paniniBitesLeft} Bites</span>
-                  <button onClick={() => setPaniniBitesLeft(4)} className="text-[10px] text-slate-400">New Order</button>
-                </div>
-                <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                  <div className="bg-gradient-to-r from-amber-500 to-yellow-400 h-full transition-all" style={{ width: `${(paniniBitesLeft / 4) * 100}%` }} />
-                </div>
-                <button
-                  disabled={paniniBitesLeft <= 0}
-                  onClick={() => {
-                    sound.playClick();
-                    setPaniniBitesLeft(prev => Math.max(0, prev - 1));
-                  }}
-                  className="w-full py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-bold rounded-xl"
-                >
-                  🥪 Eat Bite (-1 Bite)
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -1805,7 +1734,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
               </button>
             </div>
 
-            {/* Concierge Greeting */}
             <div className="p-4 bg-slate-950 rounded-2xl border border-rose-500/30 flex items-start gap-4">
               <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center text-2xl font-bold flex-shrink-0">
                 🤵
@@ -1821,7 +1749,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
               </div>
             </div>
 
-            {/* Check-In Action Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
                 <div className="flex items-center gap-2 font-bold text-amber-400">
@@ -1862,7 +1789,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
               </div>
             </div>
 
-            {/* Spoken Practice for Hotel */}
             <div className="p-4 bg-slate-950 rounded-2xl border border-rose-500/30 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-white text-xs">Practice Hotel Check-In English:</span>
@@ -1879,153 +1805,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
                 }}
               />
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* 🛫 AIRPORT MULTI-STAGE TRAVEL HUB MODAL */}
-      {showAirportStagesModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
-          <div className="bg-slate-900 border-2 border-sky-500/60 rounded-3xl max-w-4xl w-full p-6 sm:p-8 shadow-2xl space-y-6 my-8">
-            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
-              <div>
-                <span className="text-xs font-black uppercase tracking-wider text-sky-400">Vizag VTZ & Singapore Changi Hub</span>
-                <h3 className="text-2xl font-black text-white">Full International Airport Departure Journey 🛫</h3>
-              </div>
-              <button
-                onClick={() => setShowAirportStagesModal(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold cursor-pointer"
-              >
-                ✕ Back to World
-              </button>
-            </div>
-
-            {/* Airport Journey Stages */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-              {/* Stage 1: Check-in & Baggage */}
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
-                <div className="flex items-center gap-1.5 font-bold text-sky-400">
-                  <Luggage className="w-4 h-4" /> 1. Airline Check-In
-                </div>
-                <p className="text-slate-300">
-                  Weigh check-in baggage (18.4 kg / 23 kg max allowance) and print international boarding pass for Singapore SQ 529.
-                </p>
-                <button
-                  onClick={() => {
-                    sound.playSuccess();
-                    setHasBoardingPass(true);
-                    onAddXp(50, "Printed Boarding Pass Seat 14A! 🎫");
-                  }}
-                  className="w-full py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow cursor-pointer"
-                >
-                  🎫 Print Boarding Pass (+50 XP)
-                </button>
-              </div>
-
-              {/* Stage 2: Security X-Ray */}
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
-                <div className="flex items-center gap-1.5 font-bold text-amber-400">
-                  <ShieldCheck className="w-4 h-4" /> 2. CISF / TSA Security
-                </div>
-                <p className="text-slate-300">
-                  Place laptop and liquids in grey tray, walk through metal detector arch, and collect stamped boarding pass.
-                </p>
-                <button
-                  onClick={() => {
-                    sound.playSuccess();
-                    onAddXp(50, "Cleared Security Screening! 🛡️");
-                  }}
-                  className="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow cursor-pointer"
-                >
-                  🛡️ Walk Through Arch (+50 XP)
-                </button>
-              </div>
-
-              {/* Stage 3: Immigration & Waterfall */}
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
-                <div className="flex items-center gap-1.5 font-bold text-emerald-400">
-                  <Plane className="w-4 h-4" /> 3. Gate B12 & Waterfall
-                </div>
-                <p className="text-slate-300">
-                  View the 40m Jewel Changi Rain Vortex and board the Boeing 787 Dreamliner at Gate B12.
-                </p>
-                <button
-                  onClick={() => {
-                    sound.playSuccess();
-                    confetti({ particleCount: 100, spread: 80 });
-                    onAddXp(100, "Boarded Flight SQ 529 to Singapore! 🛫✨");
-                  }}
-                  className="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl shadow cursor-pointer"
-                >
-                  🛫 Board Airplane (+100 XP)
-                </button>
-              </div>
-            </div>
-
-            {/* Spoken Practice for Airport Immigration */}
-            <div className="p-4 bg-slate-950 rounded-2xl border border-sky-500/30 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-white text-xs">Practice Singapore Immigration Officer Interview:</span>
-                <AudioSpeakButton text={airportImmigrationScript} label="Listen" className="bg-sky-500 text-slate-950 text-xs px-3 py-1 rounded-xl" />
-              </div>
-              <p className="text-xs text-sky-200">"{airportImmigrationScript}"</p>
-              <VoiceSpeechPractice
-                targetPhrase={airportImmigrationScript}
-                accentColor="sky"
-                onSuccess={() => {
-                  sound.playSuccess();
-                  confetti({ particleCount: 80, spread: 70 });
-                  onAddXp(80, "Passed Singapore Immigration Interview! 🛂✨");
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Physical Paper Form Modal */}
-      {showFormModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
-          <div className="bg-slate-900 border-2 border-amber-500/60 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 my-8">
-            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
-              <div>
-                <span className="text-xs font-black uppercase tracking-wider text-amber-400">Physical Travel Documents</span>
-                <h3 className="text-xl font-black text-white">Singapore SG Arrival Card & Customs Form 6059B 📋</h3>
-              </div>
-              <button
-                onClick={() => setShowFormModal(false)}
-                className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold cursor-pointer"
-              >
-                ✕ Close
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div>
-                <label className="block text-slate-400 font-bold mb-1">Full Name:</label>
-                <input type="text" defaultValue="Swathi P." className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white" />
-              </div>
-              <div>
-                <label className="block text-slate-400 font-bold mb-1">Passport Number:</label>
-                <input type="text" defaultValue="Z8942103" className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono" />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-slate-400 font-bold mb-1">Hotel Address:</label>
-                <input type="text" defaultValue="Marina Bay Sands / Sakura Grand Hotel" className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white" />
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                sound.playSuccess();
-                confetti({ particleCount: 100, spread: 80 });
-                setShowFormModal(false);
-                onAddXp(80, "Submitted Official Physical Customs Form! 📋✨");
-              }}
-              className="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black rounded-2xl shadow-xl text-xs uppercase tracking-wider cursor-pointer"
-            >
-              ✓ Sign & Submit Document (+80 XP)
-            </button>
           </div>
         </div>
       )}
