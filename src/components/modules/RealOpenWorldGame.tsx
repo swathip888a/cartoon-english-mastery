@@ -60,82 +60,248 @@ type WorldDistrict =
   | 'district_grand_hotel'
   | 'district_fashion_boutique';
 
+// Helper to create rich high-res procedural Canvas Textures for Three.js
+function createWoodFloorTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+  
+  ctx.fillStyle = '#4a2e1b';
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Draw wooden planks with grain
+  const plankH = 64;
+  for (let y = 0; y < 512; y += plankH) {
+    const isAlt = (y / plankH) % 2 === 0;
+    const plankW = 256;
+    for (let x = (isAlt ? 0 : -128); x < 512; x += plankW) {
+      ctx.fillStyle = (x + y) % 3 === 0 ? '#5a3821' : (x + y) % 3 === 1 ? '#432817' : '#51321d';
+      ctx.fillRect(x + 2, y + 2, plankW - 4, plankH - 4);
+      
+      // Wood grain lines
+      ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+      ctx.lineWidth = 1;
+      for (let g = 0; g < 4; g++) {
+        ctx.beginPath();
+        ctx.moveTo(x, y + 10 + g * 12);
+        ctx.lineTo(x + plankW, y + 12 + g * 12);
+        ctx.stroke();
+      }
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(6, 6);
+  return tex;
+}
+
+function createSubwayTileTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+  
+  ctx.fillStyle = '#1e293b'; // Dark grout
+  ctx.fillRect(0, 0, 512, 512);
+
+  const tileH = 40;
+  const tileW = 80;
+  for (let y = 0; y < 512; y += tileH) {
+    const isShift = (y / tileH) % 2 === 1;
+    for (let x = (isShift ? -tileW / 2 : 0); x < 512; x += tileW) {
+      // Warm white glossy ceramic tile
+      const grad = ctx.createLinearGradient(x, y, x + tileW, y + tileH);
+      grad.addColorStop(0, '#f8fafc');
+      grad.addColorStop(0.8, '#e2e8f0');
+      grad.addColorStop(1, '#cbd5e1');
+      ctx.fillStyle = grad;
+      ctx.fillRect(x + 2, y + 2, tileW - 4, tileH - 4);
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(4, 2);
+  return tex;
+}
+
+function createStarbucksMenuScreenTexture(type: 'espresso' | 'choc_tea' | 'bakery'): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+  
+  // High-def Starbucks Digital Board Background
+  const grad = ctx.createLinearGradient(0, 0, 1024, 512);
+  if (type === 'espresso') {
+    grad.addColorStop(0, '#0f172a');
+    grad.addColorStop(1, '#1e293b');
+  } else if (type === 'choc_tea') {
+    grad.addColorStop(0, '#064e3b');
+    grad.addColorStop(1, '#022c22');
+  } else {
+    grad.addColorStop(0, '#451a03');
+    grad.addColorStop(1, '#291102');
+  }
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 1024, 512);
+
+  // Border & Header
+  ctx.strokeStyle = '#006241';
+  ctx.lineWidth = 12;
+  ctx.strokeRect(6, 6, 1012, 500);
+
+  // Siren Brand Logo Header
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 36px sans-serif';
+  ctx.fillText(
+    type === 'espresso' ? '☕ STARBUCKS ESPRESSO & CLASSICS' :
+    type === 'choc_tea' ? '🍫 CHOCOLATES, TEAS & SWEET COLD FOAM' :
+    '🥪 ARTISAN BAKERY, PANINIS & BREAKFAST',
+    40, 60
+  );
+
+  ctx.fillStyle = '#a7f3d0';
+  ctx.font = 'bold 22px monospace';
+  ctx.fillText('HOT & ICED • SHORT / TALL / GRANDE / VENTI', 40, 95);
+
+  // Menu items list
+  ctx.font = 'bold 26px sans-serif';
+  ctx.fillStyle = '#f8fafc';
+  
+  if (type === 'espresso') {
+    const items = [
+      { name: 'Caffè Latte', price: '$4.95', sub: 'Steamed milk with rich signature espresso' },
+      { name: 'Caramel Macchiato', price: '$5.45', sub: 'Vanilla, steamed milk, marked with espresso & caramel' },
+      { name: 'Blonde Vanilla Latte', price: '$5.25', sub: 'Smooth blonde roast with velvety oat milk & vanilla' },
+      { name: 'Caffè Mocha', price: '$5.35', sub: 'Bittersweet mocha sauce, espresso, and whipped cream' },
+    ];
+    items.forEach((it, idx) => {
+      const y = 160 + idx * 80;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(it.name, 40, y);
+      ctx.fillStyle = '#34d399';
+      ctx.fillText(it.price, 850, y);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '18px sans-serif';
+      ctx.fillText(it.sub, 40, y + 26);
+      ctx.font = 'bold 26px sans-serif';
+    });
+  } else if (type === 'choc_tea') {
+    const items = [
+      { name: 'Signature Hot Chocolate', price: '$4.85', sub: 'Swathi\'s Choice ⭐ Oat Milk + Blonde Shot + 3x Vanilla + Cold Foam' },
+      { name: 'White Hot Chocolate', price: '$4.95', sub: 'Rich buttery white chocolate with steamed microfoam' },
+      { name: 'Iced Matcha Green Tea Latte', price: '$5.65', sub: 'Japanese Uji matcha green tea with creamy milk & ice' },
+      { name: 'Vanilla Sweet Cold Foam (Add-on)', price: '+$1.25', sub: 'Velvety cold cream cloud sitting atop your hot/iced drink' },
+    ];
+    items.forEach((it, idx) => {
+      const y = 160 + idx * 80;
+      ctx.fillStyle = idx === 0 ? '#fde047' : '#ffffff';
+      ctx.fillText(it.name, 40, y);
+      ctx.fillStyle = '#34d399';
+      ctx.fillText(it.price, 850, y);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '18px sans-serif';
+      ctx.fillText(it.sub, 40, y + 26);
+      ctx.font = 'bold 26px sans-serif';
+    });
+  } else {
+    const items = [
+      { name: 'Tomato & Mozzarella Focaccia Panini', price: '$6.45', sub: 'Fresh mozzarella, roasted tomatoes, basil pesto (Warmed Up 🔥)' },
+      { name: 'Bacon, Gouda & Egg Sandwich', price: '$5.95', sub: 'Applewood smoked bacon & parmesan frittata on artisan roll' },
+      { name: 'All-Butter French Croissant', price: '$3.85', sub: 'Flaky golden layered pastry toasted in rapid TurboChef' },
+      { name: 'Oat Milk Substitution Bar', price: '+$0.70', sub: 'Oatly Barista Edition for maximum creamy texture' },
+    ];
+    items.forEach((it, idx) => {
+      const y = 160 + idx * 80;
+      ctx.fillStyle = idx === 0 ? '#fde047' : '#ffffff';
+      ctx.fillText(it.name, 40, y);
+      ctx.fillStyle = '#34d399';
+      ctx.fillText(it.price, 850, y);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '18px sans-serif';
+      ctx.fillText(it.sub, 40, y + 26);
+      ctx.font = 'bold 26px sans-serif';
+    });
+  }
+
+  return new THREE.CanvasTexture(canvas);
+}
+
+function createAirportFidsTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, 1024, 512);
+
+  // Header
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = 'bold 32px sans-serif';
+  ctx.fillText('🛫 DEPARTURES / FLIGHT INFORMATION (FIDS)', 30, 50);
+
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = 'bold 18px monospace';
+  ctx.fillText('FLIGHT     AIRLINE             DESTINATION          GATE   TIME   STATUS', 30, 90);
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(30, 105);
+  ctx.lineTo(994, 105);
+  ctx.stroke();
+
+  const flights = [
+    { code: 'SQ 529', airline: 'Singapore Airlines', dest: 'Singapore Changi (SIN)', gate: 'B12', time: '14:45', status: 'BOARDING', color: '#10b981' },
+    { code: '6E 712', airline: 'IndiGo Airlines', dest: 'New Delhi (DEL)', gate: '03', time: '15:10', status: 'ON TIME', color: '#38bdf8' },
+    { code: 'AI 451', airline: 'Air India', dest: 'Hyderabad (HYD)', gate: '01', time: '15:30', status: 'SECURITY OPEN', color: '#f59e0b' },
+    { code: 'EK 318', airline: 'Emirates', dest: 'Dubai Intl (DXB)', gate: 'A4', time: '16:00', status: 'ON TIME', color: '#38bdf8' },
+    { code: 'JL 036', airline: 'Japan Airlines', dest: 'Tokyo Haneda (HND)', gate: 'C8', time: '16:20', status: 'CHECK-IN OPEN', color: '#cbd5e1' },
+  ];
+
+  flights.forEach((fl, idx) => {
+    const y = 150 + idx * 70;
+    ctx.font = 'bold 22px monospace';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(fl.code.padEnd(10), 30, y);
+    ctx.fillText(fl.airline.padEnd(20), 160, y);
+    ctx.fillStyle = '#7dd3fc';
+    ctx.fillText(fl.dest.padEnd(22), 430, y);
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillText(fl.gate.padEnd(6), 750, y);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(fl.time.padEnd(6), 840, y);
+    ctx.fillStyle = fl.color;
+    ctx.fillText(fl.status, 920, y);
+  });
+
+  return new THREE.CanvasTexture(canvas);
+}
+
 export const RealOpenWorldGame: React.FC<RealOpenWorldGameProps> = ({ onAddXp }) => {
   const mountRef = useRef<HTMLDivElement | null>(null);
 
-  // Active Zone & Camera
+  // Active District & Modes
   const [activeDistrict, setActiveDistrict] = useState<WorldDistrict>('district_starbucks');
-  const [cameraView, setCameraView] = useState<'third_person' | 'first_person_eyes' | 'birds_eye'>('third_person');
-  const [timeOfDay, setTimeOfDay] = useState<'golden_morning' | 'bright_day' | 'cozy_night'>('golden_morning');
+  const [cameraView, setCameraView] = useState<'third_person' | 'first_person_eyes'>('third_person');
 
-  // Interactive In-World Screen Modals
+  // Modals
   const [showMenuBoardModal, setShowMenuBoardModal] = useState<boolean>(false);
   const [showFidsFlightModal, setShowFidsFlightModal] = useState<boolean>(false);
   const [showPaperFormModal, setShowPaperFormModal] = useState<boolean>(false);
-  const [showItemInspectModal, setShowItemInspectModal] = useState<string | null>(null);
 
   // Player & Interactive State
   const [playerName] = useState<string>('Swathi');
   const [drinkLiquidPct, setDrinkLiquidPct] = useState<number>(100);
   const [foodBitesLeft, setFoodBitesLeft] = useState<number>(4);
-  const [nearbyInteractiveTarget, setNearbyInteractiveTarget] = useState<{
-    id: string;
-    title: string;
-    type: 'screen' | 'npc' | 'station' | 'table';
-    action: () => void;
-  } | null>(null);
-
-  // Flight Data for Live Airport FIDS Display Board
-  const flightData = [
-    { flight: 'SQ 529', airline: 'Singapore Airlines', dest: 'Singapore Changi (SIN)', gate: 'B12', time: '14:45', status: 'BOARDING', terminal: 'T3' },
-    { flight: '6E 712', airline: 'IndiGo', dest: 'New Delhi (DEL)', gate: 'Gate 3', time: '15:10', status: 'ON TIME', terminal: 'T1' },
-    { flight: 'AI 451', airline: 'Air India', dest: 'Hyderabad (HYD)', gate: 'Gate 1', time: '15:30', status: 'SECURITY OPEN', terminal: 'T1' },
-    { flight: 'EK 318', airline: 'Emirates', dest: 'Dubai International (DXB)', gate: 'Gate A4', time: '16:00', status: 'ON TIME', terminal: 'T2' },
-    { flight: 'JL 036', airline: 'Japan Airlines', dest: 'Tokyo Haneda (HND)', gate: 'Gate C8', time: '16:20', status: 'CHECK-IN OPEN', terminal: 'T3' },
-  ];
-
-  // Starbucks Overhead Digital Menu Categories
-  const starbucksMenu = {
-    espresso: [
-      { name: 'Caffè Latte', price: '$4.95', cal: '190 kcal', desc: 'Rich espresso balanced with steamed milk and light layer of foam.' },
-      { name: 'Caramel Macchiato', price: '$5.45', cal: '250 kcal', desc: 'Steamed milk with vanilla syrup, marked with espresso and caramel drizzle.' },
-      { name: 'Blonde Vanilla Latte', price: '$5.25', cal: '200 kcal', desc: 'Extra smooth blonde espresso roast with velvety milk and vanilla syrup.' },
-      { name: 'Caffè Mocha', price: '$5.35', cal: '370 kcal', desc: 'Espresso with bittersweet mocha sauce, steamed milk, and whipped cream.' }
-    ],
-    chocolate_tea: [
-      { name: 'Signature Hot Chocolate', price: '$4.85', cal: '320 kcal', desc: 'Steamed milk with rich dark chocolate cocoa and mocha sauce.', badge: 'Swathi\'s Pick ⭐' },
-      { name: 'White Hot Chocolate', price: '$4.95', cal: '390 kcal', desc: 'Buttery white chocolate sauce blended with steamed milk and cream.' },
-      { name: 'Iced Matcha Green Tea Latte', price: '$5.65', cal: '200 kcal', desc: 'Smooth sweetened Japanese Uji matcha green tea shaken with milk and ice.' },
-      { name: 'Chai Tea Latte', price: '$4.95', cal: '240 kcal', desc: 'Black tea infused with cinnamon, clove, and warm spices steamed with milk.' }
-    ],
-    custom_addons: [
-      { name: 'Oat Milk (Oatly Barista)', price: '+$0.70', desc: 'Creamy, sweet, and nutty plant-based milk that blends flawlessly with cocoa.', tag: 'Creamy Perfection' },
-      { name: 'Blonde Espresso Shot', price: '+$1.00', desc: 'Mellow, lightly roasted coffee beans that add depth without dark roast bitterness.', tag: 'Flavor Science' },
-      { name: 'Vanilla Syrup (3 Pumps)', price: '+$0.80', desc: 'Madagascar vanilla syrup balancing rich bittersweet chocolate.', tag: 'Sweet Harmony' },
-      { name: 'Vanilla Sweet Cold Foam', price: '+$1.25', desc: 'Thick velvety cold cream cloud sitting on top for a hot-and-cold contrast.', tag: 'Sensory Cloud' }
-    ],
-    bakery_paninis: [
-      { name: 'Tomato & Mozzarella Focaccia Panini', price: '$6.45', cal: '360 kcal', desc: 'Melted fresh mozzarella cheese, roasted tomatoes, and basil pesto on toasted focaccia.', badge: 'Warmed Up 🔥' },
-      { name: 'Bacon, Gouda & Egg Sandwich', price: '$5.95', cal: '360 kcal', desc: 'Crispy Applewood smoked bacon, aged Gouda cheese, and parmesan frittata on artisan roll.' },
-      { name: 'Butter Croissant', price: '$3.85', cal: '260 kcal', desc: 'Traditional French all-butter flaky pastry heated to golden crisp.' }
-    ]
-  };
-
-  // Form Filling State
-  const [formData, setFormData] = useState({
-    fullName: 'Swathi P.',
-    passportNo: 'Z8942103',
-    flightNo: 'SQ 529 (Singapore Airlines)',
-    hotelAddress: 'Marina Bay Sands / Sakura Grand Hotel',
-    purposeOfVisit: 'Tourism & International Masterclass',
-    carryingCashOver10k: false,
-    signature: 'Swathi P.'
-  });
 
   // Target Script
   const fullStarbucksScript = "Hi! Can I please get a Short Classic Signature Hot Chocolate with Oat Milk, Blonde Espresso, and 3 pumps of Vanilla, topped with Vanilla Sweet Cold Foam, and a Tomato & Mozzarella Focaccia Panini warmed up?";
 
-  // Input & Physics State
+  // Input & Physics
   const keysPressed = useRef<{ [key: string]: boolean }>({});
   const playerState = useRef({
     x: 0,
@@ -147,23 +313,21 @@ export const RealOpenWorldGame: React.FC<RealOpenWorldGameProps> = ({ onAddXp })
     speed: 0.16
   });
 
-  // Three.js 3D Open World Scene Setup
+  // 3D Scene Initialization
   useEffect(() => {
     const container = mountRef.current;
     if (!container) return;
 
     // 1. Scene, Camera, Renderer
     const scene = new THREE.Scene();
-    const skyColors = {
-      golden_morning: 0x241712,
-      bright_day: 0x0a192f,
-      cozy_night: 0x0f0c18
-    };
-    scene.background = new THREE.Color(skyColors[timeOfDay]);
-    scene.fog = new THREE.FogExp2(scene.background, 0.012);
+    scene.background = new THREE.Color(
+      activeDistrict === 'district_starbucks' ? 0x241712 :
+      activeDistrict === 'district_changi_jewel' ? 0x09182d : 0x0f172a
+    );
+    scene.fog = new THREE.FogExp2(scene.background, 0.01);
 
     const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
-    camera.position.set(0, 5, 12);
+    camera.position.set(0, 4.5, 11);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.setSize(container.clientWidth, container.clientHeight);
@@ -171,102 +335,131 @@ export const RealOpenWorldGame: React.FC<RealOpenWorldGameProps> = ({ onAddXp })
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.2;
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    // 2. Dynamic Lighting
-    const ambient = new THREE.AmbientLight(0xffffff, timeOfDay === 'golden_morning' ? 0.9 : 1.1);
+    // 2. Lights
+    const ambient = new THREE.AmbientLight(0xfffaed, 0.9);
     scene.add(ambient);
 
-    const sun = new THREE.DirectionalLight(0xfffaed, 1.6);
-    sun.position.set(20, 35, 20);
+    const sun = new THREE.DirectionalLight(0xfff7ed, 1.8);
+    sun.position.set(20, 40, 20);
     sun.castShadow = true;
     sun.shadow.mapSize.width = 1024;
     sun.shadow.mapSize.height = 1024;
     scene.add(sun);
 
-    // Dynamic Zone Point Light
-    const pointAccent = new THREE.PointLight(
-      activeDistrict === 'district_starbucks' ? 0xf59e0b :
-      activeDistrict === 'district_changi_jewel' ? 0x38bdf8 :
-      activeDistrict === 'district_vizag_airport' ? 0x10b981 : 0xd946ef,
-      3.0,
-      35
-    );
-    pointAccent.position.set(0, 6, 0);
-    scene.add(pointAccent);
+    // Warm cafe pendant lights
+    const warmLight1 = new THREE.PointLight(0xf59e0b, 2.5, 25);
+    warmLight1.position.set(-4, 5, -4);
+    scene.add(warmLight1);
 
-    // 3. World Group Architecture
+    const warmLight2 = new THREE.PointLight(0x10b981, 2.5, 25);
+    warmLight2.position.set(4, 5, -4);
+    scene.add(warmLight2);
+
+    // 3. World Group
     const worldGroup = new THREE.Group();
     scene.add(worldGroup);
 
-    // Floor
+    // Floor with Rich Wood Planks Texture
     const floorGeo = new THREE.PlaneGeometry(120, 120);
     const floorMat = new THREE.MeshStandardMaterial({
-      color: activeDistrict === 'district_starbucks' ? 0x3d271d :
-             activeDistrict === 'district_changi_jewel' ? 0x1e293b :
-             activeDistrict === 'district_vizag_airport' ? 0x334155 : 0x24142c,
-      roughness: 0.25,
-      metalness: 0.15
+      map: createWoodFloorTexture(),
+      roughness: 0.3,
+      metalness: 0.1
     });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     worldGroup.add(floor);
 
-    const grid = new THREE.GridHelper(120, 60, 0x10b981, 0x475569);
-    grid.position.y = 0.01;
-    worldGroup.add(grid);
-
-    // Particles (Steam, Waterfall)
+    // Specific Environments
     let particleSystem: THREE.Points | null = null;
     let particleCoords: Float32Array | null = null;
 
     if (activeDistrict === 'district_starbucks') {
-      // ☕ 3D REAL STARBUCKS RESERVE SHOP
-      // Main Barista Counter
-      const counter = new THREE.Mesh(
-        new THREE.BoxGeometry(20, 2.4, 4.5),
-        new THREE.MeshStandardMaterial({ color: 0x5c2b14, roughness: 0.2, metalness: 0.1 })
-      );
+      // ☕ FULL REALISTIC STARBUCKS RESERVE CAFE INTERIOR
+
+      // Back Wall with Subway Ceramic Tiles
+      const wallGeo = new THREE.BoxGeometry(36, 12, 1);
+      const wallMat = new THREE.MeshStandardMaterial({
+        map: createSubwayTileTexture(),
+        roughness: 0.2
+      });
+      const backWall = new THREE.Mesh(wallGeo, wallMat);
+      backWall.position.set(0, 6, -12);
+      backWall.receiveShadow = true;
+      worldGroup.add(backWall);
+
+      // Main Barista Counter (Dark Walnut Wood)
+      const counterGeo = new THREE.BoxGeometry(22, 2.4, 4.5);
+      const counterMat = new THREE.MeshStandardMaterial({
+        color: 0x451a03,
+        roughness: 0.2,
+        metalness: 0.1
+      });
+      const counter = new THREE.Mesh(counterGeo, counterMat);
       counter.position.set(0, 1.2, -6);
       counter.castShadow = true;
+      counter.receiveShadow = true;
       worldGroup.add(counter);
 
-      // Overhead Digital Menu TV Screens (Huge Glowing Screens!)
-      for (let s = -1; s <= 1; s++) {
-        const tvFrame = new THREE.Mesh(
-          new THREE.BoxGeometry(4.8, 2.8, 0.2),
-          new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9 })
-        );
-        tvFrame.position.set(s * 5.2, 5.5, -5.8);
-        worldGroup.add(tvFrame);
+      // Emerald Green Trim
+      const trim = new THREE.Mesh(
+        new THREE.BoxGeometry(22.1, 0.45, 4.6),
+        new THREE.MeshStandardMaterial({ color: 0x006241, roughness: 0.3 })
+      );
+      trim.position.set(0, 2.2, -6);
+      worldGroup.add(trim);
 
-        // Glowing Menu Screen Display
+      // 📺 3 GIANT OVERHEAD DIGITAL MENU TV SCREENS WITH REAL TEXTURES!
+      const screenTypes: ('espresso' | 'choc_tea' | 'bakery')[] = ['espresso', 'choc_tea', 'bakery'];
+      screenTypes.forEach((stype, idx) => {
+        const xPos = (idx - 1) * 6.5;
+        
+        // TV Bezel Frame
+        const tvBezel = new THREE.Mesh(
+          new THREE.BoxGeometry(6.0, 3.2, 0.25),
+          new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.1 })
+        );
+        tvBezel.position.set(xPos, 6.2, -6.2);
+        worldGroup.add(tvBezel);
+
+        // High-Def Digital Menu Screen Surface
         const tvScreen = new THREE.Mesh(
-          new THREE.PlaneGeometry(4.5, 2.5),
-          new THREE.MeshBasicMaterial({ color: s === -1 ? 0x1e3a8a : s === 0 ? 0x064e3b : 0x78350f })
+          new THREE.PlaneGeometry(5.8, 3.0),
+          new THREE.MeshBasicMaterial({ map: createStarbucksMenuScreenTexture(stype) })
         );
-        tvScreen.position.set(s * 5.2, 5.5, -5.68);
+        tvScreen.position.set(xPos, 6.2, -6.06);
         worldGroup.add(tvScreen);
-      }
+      });
 
-      // Mastrena II Espresso Machine
+      // Commercial Espresso Machine (Mastrena II)
       const espMachine = new THREE.Mesh(
         new THREE.BoxGeometry(4.5, 1.8, 2.4),
-        new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.1 })
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.95, roughness: 0.1 })
       );
-      espMachine.position.set(-4.5, 3.1, -6);
+      espMachine.position.set(-5, 3.1, -6);
+      espMachine.castShadow = true;
       worldGroup.add(espMachine);
 
-      // Glass Bakery Case
+      // Glass Bakery Display Case
       const bakeryCase = new THREE.Mesh(
-        new THREE.BoxGeometry(5.5, 2.0, 2.6),
-        new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, roughness: 0.1 })
+        new THREE.BoxGeometry(6, 2.2, 2.8),
+        new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, roughness: 0.05 })
       );
-      bakeryCase.position.set(4.8, 3.2, -6);
+      bakeryCase.position.set(5.5, 3.3, -6);
       worldGroup.add(bakeryCase);
+
+      // 3D Croissant & Panini inside case
+      const panini = new THREE.Mesh(
+        new THREE.BoxGeometry(1.2, 0.4, 0.7),
+        new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.6 })
+      );
+      panini.position.set(5.5, 2.5, -6);
+      worldGroup.add(panini);
 
       // Barista Hana NPC
       const barista = new THREE.Group();
@@ -274,17 +467,23 @@ export const RealOpenWorldGame: React.FC<RealOpenWorldGameProps> = ({ onAddXp })
       const bBody = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.55, 1.3, 16), new THREE.MeshStandardMaterial({ color: 0x006241 }));
       bBody.position.y = -1.1;
       barista.add(bBody);
-      barista.position.set(0, 2.5, -7.8);
+      barista.position.set(0, 2.5, -8.2);
       worldGroup.add(barista);
 
-      // Customer Tables & Booth Seating
-      for (let tx = -1; tx <= 1; tx += 2) {
-        const table = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 1.6, 16), new THREE.MeshStandardMaterial({ color: 0x451a03 }));
-        table.position.set(tx * 9, 0.8, 5);
+      // Cafe Seating Tables & Tatami Booths
+      for (let t = -1; t <= 1; t += 2) {
+        const table = new THREE.Mesh(
+          new THREE.CylinderGeometry(1.6, 1.6, 1.6, 16),
+          new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.2 })
+        );
+        table.position.set(t * 9.5, 0.8, 5);
         worldGroup.add(table);
 
-        const chair = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.1, 1.5), new THREE.MeshStandardMaterial({ color: 0x006241 }));
-        chair.position.set(tx * 9, 0.55, 7.5);
+        const chair = new THREE.Mesh(
+          new THREE.BoxGeometry(1.5, 1.1, 1.5),
+          new THREE.MeshStandardMaterial({ color: 0x006241 })
+        );
+        chair.position.set(t * 9.5, 0.55, 7.5);
         worldGroup.add(chair);
       }
 
@@ -305,7 +504,7 @@ export const RealOpenWorldGame: React.FC<RealOpenWorldGameProps> = ({ onAddXp })
       domeRing.position.set(0, 16, 0);
       worldGroup.add(domeRing);
 
-      // Waterfall Droplet Particles
+      // Waterfall Droplets
       const pCount = 3500;
       const pGeo = new THREE.BufferGeometry();
       particleCoords = new Float32Array(pCount * 3);
@@ -323,7 +522,7 @@ export const RealOpenWorldGame: React.FC<RealOpenWorldGameProps> = ({ onAddXp })
       );
       worldGroup.add(particleSystem);
 
-      // Elevated Skytrain Bridge
+      // Elevated Skytrain Track
       const track = new THREE.Mesh(
         new THREE.BoxGeometry(40, 0.8, 4),
         new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.6 })
@@ -331,24 +530,17 @@ export const RealOpenWorldGame: React.FC<RealOpenWorldGameProps> = ({ onAddXp })
       track.position.set(0, 9, 10);
       worldGroup.add(track);
 
-    } else if (activeDistrict === 'district_vizag_airport') {
-      // 🛫 VIZAG (VTZ) ALLURI SITARAMA RAJU AIRPORT
-      const terminal = new THREE.Mesh(
-        new THREE.BoxGeometry(32, 9, 4),
-        new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3 })
+    } else {
+      // 🛫 VIZAG (VTZ) ALLURI SITARAMA RAJU AIRPORT & FIDS BOARD
+      // Giant Glowing FIDS Screen on Wall
+      const fidsScreen = new THREE.Mesh(
+        new THREE.PlaneGeometry(16, 8),
+        new THREE.MeshBasicMaterial({ map: createAirportFidsTexture() })
       );
-      terminal.position.set(0, 4.5, -20);
-      worldGroup.add(terminal);
+      fidsScreen.position.set(0, 6, -14.8);
+      worldGroup.add(fidsScreen);
 
-      // DigiYatra Electronic Facial Gate
-      const digi = new THREE.Mesh(
-        new THREE.BoxGeometry(5, 3.5, 0.5),
-        new THREE.MeshStandardMaterial({ color: 0x10b981 })
-      );
-      digi.position.set(10, 1.75, 10);
-      worldGroup.add(digi);
-
-      // Check-in Desks & Luggage Scales
+      // Check-in Desks
       const checkinDesk = new THREE.Mesh(
         new THREE.BoxGeometry(14, 2.4, 3.5),
         new THREE.MeshStandardMaterial({ color: 0x0284c7 })
@@ -361,37 +553,8 @@ export const RealOpenWorldGame: React.FC<RealOpenWorldGameProps> = ({ onAddXp })
         new THREE.BoxGeometry(4, 5, 1),
         new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 })
       );
-      arch.position.set(0, 2.5, -12);
+      arch.position.set(0, 2.5, -10);
       worldGroup.add(arch);
-
-    } else if (activeDistrict === 'district_grand_hotel') {
-      // 🏨 SAKURA GRAND HOTEL PRESIDENTIAL SUITE
-      const desk = new THREE.Mesh(
-        new THREE.BoxGeometry(18, 2.4, 4),
-        new THREE.MeshStandardMaterial({ color: 0x581c87, roughness: 0.2 })
-      );
-      desk.position.set(0, 1.2, -6);
-      worldGroup.add(desk);
-
-      const chandelier = new THREE.Mesh(
-        new THREE.TorusGeometry(4, 0.4, 16, 32),
-        new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.9 })
-      );
-      chandelier.rotation.x = Math.PI / 2;
-      chandelier.position.set(0, 9.5, 0);
-      worldGroup.add(chandelier);
-
-    } else {
-      // 👗 MILAN FASHION BOUTIQUE
-      for (let r = -1; r <= 1; r += 2) {
-        const rackBar = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.1, 0.1, 12, 8),
-          new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.9 })
-        );
-        rackBar.rotation.z = Math.PI / 2;
-        rackBar.position.set(r * 10, 3.2, 0);
-        worldGroup.add(rackBar);
-      }
     }
 
     // 4. Playable 3D Character (Swathi)
@@ -423,7 +586,7 @@ export const RealOpenWorldGame: React.FC<RealOpenWorldGameProps> = ({ onAddXp })
     pTorso.castShadow = true;
     playerGroup.add(pTorso);
 
-    // Travel Backpack
+    // Backpack
     const pBag = new THREE.Mesh(
       new THREE.BoxGeometry(0.55, 0.65, 0.35),
       new THREE.MeshStandardMaterial({ color: 0x6366f1 })
@@ -495,7 +658,7 @@ export const RealOpenWorldGame: React.FC<RealOpenWorldGameProps> = ({ onAddXp })
     window.addEventListener('mouseup', handleMouseUp);
     dom.addEventListener('wheel', handleWheel);
 
-    // 6. 60 FPS Game Loop
+    // 6. 60 FPS Render Loop
     let animId: number;
     let tick = 0;
 
@@ -554,15 +717,12 @@ export const RealOpenWorldGame: React.FC<RealOpenWorldGameProps> = ({ onAddXp })
       playerGroup.position.set(playerState.current.x, playerState.current.y, playerState.current.z);
       playerGroup.rotation.y = playerState.current.rotY;
 
-      // Camera Perspective Switcher
+      // Camera Perspective
       if (cameraView === 'first_person_eyes') {
         camera.position.set(playerState.current.x, playerState.current.y + 2.0, playerState.current.z);
         const lookDirX = -Math.sin(cameraYaw);
         const lookDirZ = -Math.cos(cameraYaw);
         camera.lookAt(playerState.current.x + lookDirX * 10, playerState.current.y + 2.0, playerState.current.z + lookDirZ * 10);
-      } else if (cameraView === 'birds_eye') {
-        camera.position.set(playerState.current.x, playerState.current.y + 22, playerState.current.z + 6);
-        camera.lookAt(playerState.current.x, playerState.current.y, playerState.current.z);
       } else {
         const tx = playerState.current.x;
         const ty = playerState.current.y + 1.6;
@@ -613,7 +773,7 @@ export const RealOpenWorldGame: React.FC<RealOpenWorldGameProps> = ({ onAddXp })
       window.removeEventListener('resize', handleResize);
       renderer.dispose();
     };
-  }, [activeDistrict, timeOfDay, cameraView]);
+  }, [activeDistrict, cameraView]);
 
   // Teleport to district
   const handleTeleport = (district: WorldDistrict) => {
@@ -674,26 +834,6 @@ export const RealOpenWorldGame: React.FC<RealOpenWorldGameProps> = ({ onAddXp })
               }`}
             >
               🛫 3. Vizag (VTZ) Airport
-            </button>
-            <button
-              onClick={() => handleTeleport('district_grand_hotel')}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                activeDistrict === 'district_grand_hotel'
-                  ? 'bg-purple-500 text-slate-950 shadow-lg shadow-purple-500/30'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              🏨 4. Grand Hotel
-            </button>
-            <button
-              onClick={() => handleTeleport('district_fashion_boutique')}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                activeDistrict === 'district_fashion_boutique'
-                  ? 'bg-pink-500 text-slate-950 shadow-lg shadow-pink-500/30'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              👗 5. Fashion Mall
             </button>
           </div>
         </div>
@@ -778,6 +918,36 @@ export const RealOpenWorldGame: React.FC<RealOpenWorldGameProps> = ({ onAddXp })
         </div>
       </div>
 
+      {/* Voice Practice Box */}
+      <div className="p-6 bg-gradient-to-r from-slate-900 via-emerald-950/60 to-slate-900 rounded-3xl border border-emerald-500/40 shadow-xl space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Mic className="w-5 h-5 text-pink-400" />
+            <h3 className="font-bold text-white text-base">Practice Your Live Real-World Spoken Order:</h3>
+          </div>
+          <AudioSpeakButton
+            text={fullStarbucksScript}
+            label="Listen Target Pronunciation"
+            className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-xl shadow"
+          />
+        </div>
+
+        <p className="text-sm text-emerald-100 font-semibold leading-relaxed">
+          "{fullStarbucksScript}"
+        </p>
+
+        <VoiceSpeechPractice
+          targetPhrase={fullStarbucksScript}
+          phraseMeaning="Order: Short Hot Chocolate + Oat Milk + Blonde Espresso + 3 Vanilla + Cold Foam + Warmed Panini"
+          accentColor="emerald"
+          onSuccess={() => {
+            sound.playSuccess();
+            confetti({ particleCount: 100, spread: 80 });
+            onAddXp(80, "Perfect Spoken English Masterpiece Order! 🎤✨");
+          }}
+        />
+      </div>
+
       {/* --- MODAL 1: REAL OVERHEAD STARBUCKS MENU SCREENS --- */}
       {showMenuBoardModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
@@ -804,102 +974,6 @@ export const RealOpenWorldGame: React.FC<RealOpenWorldGameProps> = ({ onAddXp })
               </button>
             </div>
 
-            {/* 4 Menu Columns just like in real stores! */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Column 1: Espresso & Classics */}
-              <div className="bg-slate-950/90 rounded-2xl p-4 border border-slate-800 space-y-3">
-                <h4 className="text-sm font-black text-amber-400 uppercase tracking-wide border-b border-slate-800 pb-2 flex items-center justify-between">
-                  <span>☕ Espresso & Classics</span>
-                  <span className="text-[10px] text-slate-400">Hot/Iced</span>
-                </h4>
-                <div className="space-y-3">
-                  {starbucksMenu.espresso.map((item) => (
-                    <div key={item.name} className="space-y-0.5">
-                      <div className="flex justify-between text-xs font-bold text-white">
-                        <span>{item.name}</span>
-                        <span className="text-emerald-400">{item.price}</span>
-                      </div>
-                      <div className="flex justify-between text-[10px] text-slate-400">
-                        <span>{item.cal}</span>
-                      </div>
-                      <p className="text-[11px] text-slate-300 leading-tight">{item.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Column 2: Chocolate & Teas */}
-              <div className="bg-slate-950/90 rounded-2xl p-4 border border-slate-800 space-y-3">
-                <h4 className="text-sm font-black text-teal-400 uppercase tracking-wide border-b border-slate-800 pb-2 flex items-center justify-between">
-                  <span>🍫 Chocolates & Teas</span>
-                  <span className="text-[10px] text-slate-400">Handcrafted</span>
-                </h4>
-                <div className="space-y-3">
-                  {starbucksMenu.chocolate_tea.map((item) => (
-                    <div key={item.name} className="space-y-0.5">
-                      <div className="flex justify-between text-xs font-bold text-white">
-                        <span>{item.name}</span>
-                        <span className="text-emerald-400">{item.price}</span>
-                      </div>
-                      {item.badge && (
-                        <span className="inline-block text-[9px] px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 rounded font-bold">
-                          {item.badge}
-                        </span>
-                      )}
-                      <p className="text-[11px] text-slate-300 leading-tight">{item.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Column 3: Custom Add-ons */}
-              <div className="bg-slate-950/90 rounded-2xl p-4 border border-slate-800 space-y-3">
-                <h4 className="text-sm font-black text-pink-400 uppercase tracking-wide border-b border-slate-800 pb-2 flex items-center justify-between">
-                  <span>✨ Custom Add-on Bar</span>
-                  <span className="text-[10px] text-slate-400">Make it Yours</span>
-                </h4>
-                <div className="space-y-3">
-                  {starbucksMenu.custom_addons.map((item) => (
-                    <div key={item.name} className="space-y-0.5">
-                      <div className="flex justify-between text-xs font-bold text-white">
-                        <span>{item.name}</span>
-                        <span className="text-emerald-400">{item.price}</span>
-                      </div>
-                      <span className="inline-block text-[9px] px-1.5 py-0.2 bg-pink-500/20 text-pink-300 rounded font-bold">
-                        {item.tag}
-                      </span>
-                      <p className="text-[11px] text-slate-300 leading-tight">{item.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Column 4: Warm Bakery & Paninis */}
-              <div className="bg-slate-950/90 rounded-2xl p-4 border border-slate-800 space-y-3">
-                <h4 className="text-sm font-black text-amber-300 uppercase tracking-wide border-b border-slate-800 pb-2 flex items-center justify-between">
-                  <span>🥪 Warm Bakery & Paninis</span>
-                  <span className="text-[10px] text-slate-400">TurboChef</span>
-                </h4>
-                <div className="space-y-3">
-                  {starbucksMenu.bakery_paninis.map((item) => (
-                    <div key={item.name} className="space-y-0.5">
-                      <div className="flex justify-between text-xs font-bold text-white">
-                        <span>{item.name}</span>
-                        <span className="text-emerald-400">{item.price}</span>
-                      </div>
-                      {item.badge && (
-                        <span className="inline-block text-[9px] px-1.5 py-0.2 bg-amber-500/20 text-amber-300 rounded font-bold">
-                          {item.badge}
-                        </span>
-                      )}
-                      <p className="text-[11px] text-slate-300 leading-tight">{item.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Practice Bar */}
             <div className="p-4 bg-emerald-950/60 rounded-2xl border border-emerald-500/40 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-xs text-emerald-100">
                 <span className="font-bold text-emerald-300">Swathi's Masterpiece Order: </span>
@@ -941,41 +1015,6 @@ export const RealOpenWorldGame: React.FC<RealOpenWorldGameProps> = ({ onAddXp })
               </button>
             </div>
 
-            {/* Flight Board Table */}
-            <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950">
-              <table className="w-full text-left text-xs text-slate-300 font-mono">
-                <thead className="bg-slate-900 text-amber-300 uppercase tracking-wider text-[11px] font-sans border-b border-slate-800">
-                  <tr>
-                    <th className="p-3.5">Flight</th>
-                    <th className="p-3.5">Airline</th>
-                    <th className="p-3.5">Destination</th>
-                    <th className="p-3.5">Gate</th>
-                    <th className="p-3.5">Time</th>
-                    <th className="p-3.5">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  {flightData.map((fl) => (
-                    <tr key={fl.flight} className="hover:bg-slate-900/60 transition-colors">
-                      <td className="p-3.5 font-bold text-white">{fl.flight}</td>
-                      <td className="p-3.5">{fl.airline}</td>
-                      <td className="p-3.5 font-semibold text-sky-300">{fl.dest}</td>
-                      <td className="p-3.5 font-bold text-amber-400">{fl.gate}</td>
-                      <td className="p-3.5">{fl.time}</td>
-                      <td className="p-3.5">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          fl.status === 'BOARDING' ? 'bg-emerald-500/20 text-emerald-300 animate-pulse' :
-                          fl.status === 'ON TIME' ? 'bg-sky-500/20 text-sky-300' : 'bg-amber-500/20 text-amber-300'
-                        }`}>
-                          {fl.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
             <div className="p-4 bg-sky-950/60 rounded-2xl border border-sky-500/30 flex items-center justify-between text-xs text-sky-100">
               <span>⭐ Your Flight: <strong className="text-white">SQ 529 to Singapore Changi</strong> • Gate B12 • Status: <strong className="text-emerald-400">BOARDING NOW</strong></span>
               <AudioSpeakButton
@@ -1002,7 +1041,7 @@ export const RealOpenWorldGame: React.FC<RealOpenWorldGameProps> = ({ onAddXp })
                     Official Physical Document Practice
                   </span>
                   <h3 className="text-xl font-black text-white">
-                    Singapore SG Arrival Card & US Customs Declaration Form 6059B
+                    Singapore SG Arrival Card & Customs Declaration Form 6059B
                   </h3>
                 </div>
               </div>
@@ -1012,69 +1051,6 @@ export const RealOpenWorldGame: React.FC<RealOpenWorldGameProps> = ({ onAddXp })
               >
                 ✕ Close
               </button>
-            </div>
-
-            {/* Form Fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div>
-                <label className="block text-slate-400 font-bold mb-1">1. Full Name (as in Passport):</label>
-                <input
-                  type="text"
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-semibold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 font-bold mb-1">2. Passport Number:</label>
-                <input
-                  type="text"
-                  value={formData.passportNo}
-                  onChange={(e) => setFormData({ ...formData, passportNo: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-semibold font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 font-bold mb-1">3. Flight Number & Airline:</label>
-                <input
-                  type="text"
-                  value={formData.flightNo}
-                  onChange={(e) => setFormData({ ...formData, flightNo: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-semibold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 font-bold mb-1">4. Hotel / Accommodation Address:</label>
-                <input
-                  type="text"
-                  value={formData.hotelAddress}
-                  onChange={(e) => setFormData({ ...formData, hotelAddress: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-semibold"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-slate-400 font-bold mb-1">5. Purpose of Visit:</label>
-                <input
-                  type="text"
-                  value={formData.purposeOfVisit}
-                  onChange={(e) => setFormData({ ...formData, purposeOfVisit: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-semibold"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-slate-400 font-bold mb-1">Applicant Signature:</label>
-                <input
-                  type="text"
-                  value={formData.signature}
-                  onChange={(e) => setFormData({ ...formData, signature: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-amber-300 font-serif italic text-sm"
-                />
-              </div>
             </div>
 
             <button
