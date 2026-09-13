@@ -65,7 +65,8 @@ import {
   VolumeX,
   Banknote,
   Film,
-  MessageSquare
+  MessageSquare,
+  FlameKindling
 } from 'lucide-react';
 
 interface UltimateRealOpenWorldEngineProps {
@@ -76,16 +77,21 @@ interface UltimateRealOpenWorldEngineProps {
 type TimeOfDay = 'day' | 'sunset' | 'night' | 'neon';
 type VehicleType = 'sports_sedan' | 'luxury_suv';
 
-interface NPCData {
+interface TelltaleChoice {
+  text: string;
+  response: string;
+  memoryTag: string;
+  xp: number;
+}
+
+interface TelltaleNPCData {
   id: string;
   name: string;
   role: string;
   location: string;
   avatar: string;
   greeting: string;
-  script: string;
-  explanation: string;
-  xpReward: number;
+  choices: TelltaleChoice[];
 }
 
 // Procedural Photorealistic Textures
@@ -279,7 +285,7 @@ function createAirportFidsTexture(): THREE.CanvasTexture {
   return new THREE.CanvasTexture(canvas);
 }
 
-// 3D Real Humanoid Mesh Generator Helper
+// 3D Humanoid Model Builder Helper
 function createHumanoidModel(uniformColor: number, skinColor: number = 0xffedd5, hairColor: number = 0x3b1d11): THREE.Group {
   const group = new THREE.Group();
 
@@ -324,24 +330,14 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('day');
   const [activeVehicle, setActiveVehicle] = useState<VehicleType>('sports_sedan');
 
-  // Interactive NPC Proximity Trigger State
-  const [nearbyNpc, setNearbyNpc] = useState<NPCData | null>(null);
-  const [activeNpcDialogue, setActiveNpcDialogue] = useState<NPCData | null>(null);
+  // GTA-Style Proximity & Telltale Dialogue State
+  const [nearbyNpc, setNearbyNpc] = useState<TelltaleNPCData | null>(null);
+  const [activeTelltaleDialogue, setActiveTelltaleDialogue] = useState<TelltaleNPCData | null>(null);
+  const [selectedChoice, setSelectedChoice] = useState<TelltaleChoice | null>(null);
+  const [telltaleNotification, setTelltaleNotification] = useState<string | null>(null);
 
-  // Real-World Interactive Modals
-  const [showOverheadMenuModal, setShowOverheadMenuModal] = useState<boolean>(false);
-  const [showFidsModal, setShowFidsModal] = useState<boolean>(false);
-  const [showFormModal, setShowFormModal] = useState<boolean>(false);
-  const [showHotelModal, setShowHotelModal] = useState<boolean>(false);
-  const [showAirportStagesModal, setShowAirportStagesModal] = useState<boolean>(false);
-  const [showStarbucksCustomizerModal, setShowStarbucksCustomizerModal] = useState<boolean>(false);
+  // Modals
   const [showSmartphoneModal, setShowSmartphoneModal] = useState<boolean>(false);
-
-  // Consumables & Gameplay Metrics
-  const [coffeeLiquidLevel, setCoffeeLiquidLevel] = useState<number>(100);
-  const [paniniBitesLeft, setPaniniBitesLeft] = useState<number>(4);
-  const [hasHotelKeycard, setHasHotelKeycard] = useState<boolean>(false);
-  const [hasBoardingPass, setHasBoardingPass] = useState<boolean>(false);
 
   // --- DUAL ON-SCREEN VIRTUAL JOYSTICK STATE (MOUSE & TOUCH) ---
   const [leftStickPos, setLeftStickPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -352,29 +348,75 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
   const rightStickActive = useRef<boolean>(false);
   const cameraAngleYaw = useRef<number>(0);
 
-  // NPC Dataset with Real Spoken English Challenges
-  const npcs: NPCData[] = [
+  // Telltale / Walking Dead Style Dialogue Datasets with Meaningful Choices
+  const telltaleNPCs: TelltaleNPCData[] = [
     {
       id: 'barista_hana',
       name: 'Barista Hana',
-      role: 'Starbucks Lead Barista ☕',
+      role: 'Starbucks Master Barista ☕',
       location: 'Starbucks Reserve Counter',
       avatar: '👩‍🍳',
-      greeting: "Hi Swathi! Welcome to Starbucks Reserve! What handcrafted drink or warmed focaccia panini can I craft for you today?",
-      script: "Hi Hana! Can I please get a Short Signature Hot Chocolate with Oat Milk, a Blonde Espresso Shot, and 3 pumps of Vanilla, topped with Sweet Cold Foam, and a warmed Tomato Mozzarella Panini?",
-      explanation: "Practice ordering complex custom beverage modifications and warmed bakery items.",
-      xpReward: 80
+      greeting: "Hi Swathi! Welcome to Starbucks Reserve. What can I handcrafted for you today?",
+      choices: [
+        {
+          text: "☕ Can I get a Short Signature Hot Chocolate with Oat Milk and Cold Foam, plus a warmed Tomato Panini?",
+          response: "Excellent gourmet taste! I'll craft that right away with steamed Oatly milk and pull a blonde shot for balance.",
+          memoryTag: "Hana was impressed by your precise coffee ordering mastery.",
+          xp: 80
+        },
+        {
+          text: "🥪 What do you recommend from the fresh bakery showcase today?",
+          response: "The Tomato & Mozzarella Focaccia Panini warmed up is our top favorite! It pairs heavenly with our cocoa drinks.",
+          memoryTag: "Hana appreciated your curiosity about the bakery.",
+          xp: 60
+        },
+        {
+          text: "💳 Can I pay using Apple Pay and scan my Starbucks Rewards barcode?",
+          response: "Of course! Just hold your phone near the contactless reader. BEEP! Payment approved!",
+          memoryTag: "You collected 25 Starbucks Gold Stars.",
+          xp: 50
+        },
+        {
+          text: "🥛 Do you have dairy-free Oatly Barista oat milk available?",
+          response: "Yes! Oatly Barista is our signature plant milk, engineered for rich, silky microfoam.",
+          memoryTag: "Hana noted your preference for plant-based milks.",
+          xp: 60
+        }
+      ]
     },
     {
       id: 'security_vikram',
       name: 'Security Officer Vikram',
       role: 'CISF Airport Security Guard 👮‍♂️',
-      location: 'Airport Security Checkpoint',
+      location: 'Airport Security Metal Detector',
       avatar: '👮‍♂️',
-      greeting: "Good afternoon, Ma'am. Please take out your laptop and liquids, place them in the grey tray, and step through the metal detector archway.",
-      script: "Sure Officer! Here is my laptop in the tray, and here is my stamped boarding pass and passport for inspection.",
-      explanation: "Master security protocol vocabulary and polite passenger responses.",
-      xpReward: 70
+      greeting: "Good afternoon, Ma'am. Please take out your electronic devices and liquids into the grey tray before stepping through the arch.",
+      choices: [
+        {
+          text: "🛡️ Here is my laptop and liquids in the tray. May I step through the detector?",
+          response: "Thank you for your cooperation, Ma'am. Step through... BEEP (All clear!). Have a safe flight!",
+          memoryTag: "Officer Vikram stamped your boarding pass with a security clearance seal.",
+          xp: 80
+        },
+        {
+          text: "⌚ Do I need to remove my wristwatch and winter jacket as well?",
+          response: "Yes please, place them in the small side basket. It ensures a quick and smooth screening.",
+          memoryTag: "Officer Vikram appreciated your proactive compliance.",
+          xp: 65
+        },
+        {
+          text: "🎫 Here is my physical boarding pass and passport for stamping.",
+          response: "Everything is in order. Gate B12 is straight ahead on the right concourse.",
+          memoryTag: "Officer Vikram directed you to Gate B12.",
+          xp: 60
+        },
+        {
+          text: "💧 Is a 100ml water bottle allowed through international security?",
+          response: "Only empty reusable bottles or sealed liquids under 100ml in clear zip bags are allowed.",
+          memoryTag: "You learned international IATA liquid restriction rules.",
+          xp: 70
+        }
+      ]
     },
     {
       id: 'officer_david',
@@ -382,32 +424,33 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       role: 'Singapore ICA Border Control 🛂',
       location: 'Immigration Passport Control',
       avatar: '🛂',
-      greeting: "Passport and SG Arrival Card please. What is the primary purpose and duration of your visit to Singapore?",
-      script: "Good afternoon Officer David! I am here on a five-day vacation for sightseeing and food exploration. I will be staying at the Marina Bay Sands Hotel.",
-      explanation: "Essential immigration interview fluency for stress-free international travel.",
-      xpReward: 90
-    },
-    {
-      id: 'agent_rajesh',
-      name: 'Check-In Agent Rajesh',
-      role: 'Singapore Airlines Agent 👨‍✈️',
-      location: 'Airline Check-In Desk',
-      avatar: '👨‍✈️',
-      greeting: "Welcome to Singapore Airlines. May I check your passport and please place your check-in baggage on the scale?",
-      script: "Hello Rajesh! Yes, here is my passport. I have one check-in suitcase weighing 18 kilos. Could I please request a window seat on Flight SQ 529?",
-      explanation: "Learn baggage check-in weight rules and window seat requests.",
-      xpReward: 75
-    },
-    {
-      id: 'attendant_chloe',
-      name: 'Flight Attendant Chloe',
-      role: 'Boeing 787 Cabin Crew 👩‍✈️',
-      location: 'Boeing 787 Jetbridge Door',
-      avatar: '👩‍✈️',
-      greeting: "Welcome aboard Singapore Airlines Boeing 787 Dreamliner! Your seat 14A is down the right aisle by the window.",
-      script: "Thank you Chloe! Could you please tell me what meal choices we have for dinner tonight, and may I have an extra blanket?",
-      explanation: "Cabin courtesy and in-flight service requests.",
-      xpReward: 80
+      greeting: "Passport and electronic SG Arrival Card please. What is the primary purpose and duration of your visit to Singapore?",
+      choices: [
+        {
+          text: "🛂 Good afternoon Officer. I am here for a 5-day vacation and cultural tour, staying at Marina Bay Sands.",
+          response: "Thank you Miss Swathi. Welcome to Singapore! *THUMP* (Passport Stamped). Enjoy the Jewel Waterfall!",
+          memoryTag: "Officer David granted a 30-day tourist entry pass.",
+          xp: 90
+        },
+        {
+          text: "📋 I submitted my SG Arrival Card online yesterday. Here is the confirmation QR code.",
+          response: "Biometric match confirmed on our e-Gate system. Your paperwork is immaculate.",
+          memoryTag: "Officer David noted your complete digital documentation.",
+          xp: 85
+        },
+        {
+          text: "🏨 Here is my confirmed hotel booking voucher and return flight ticket to Vizag.",
+          response: "Return travel itinerary verified. Proceed through the baggage reclaim hall.",
+          memoryTag: "You smoothly proved your onward travel itinerary.",
+          xp: 75
+        },
+        {
+          text: "🛍️ May I know where the Duty-Free baggage carousel for SQ 529 is located?",
+          response: "Baggage belt 04 is directly behind the customs clearance exit.",
+          memoryTag: "Officer David guided you to baggage carousel 04.",
+          xp: 65
+        }
+      ]
     },
     {
       id: 'concierge_marcus',
@@ -415,10 +458,33 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       role: 'Grand Marina 5-Star Hotel 🤵',
       location: 'Hotel Grand Lobby',
       avatar: '🤵',
-      greeting: "Welcome to the Grand Marina Hotel, Miss Swathi! It is an honor to have you with us. May I check you into Penthouse Suite #808?",
-      script: "Hello Marcus! Yes please, I have a reservation under Swathi. Could I also have two keycards and breakfast room service scheduled for 8:00 AM?",
-      explanation: "Luxury hotel check-in and concierge service requests.",
-      xpReward: 85
+      greeting: "Welcome to the Grand Marina Hotel, Miss Swathi! It is an absolute privilege to host you. How may I facilitate your stay today?",
+      choices: [
+        {
+          text: "🏨 Hello Marcus! I have a reservation for the Penthouse Suite #808 with a skyline balcony view.",
+          response: "A magnificent selection! Here is your gold RFID keycard #808. The elevator is to your left.",
+          memoryTag: "Marcus upgraded your suite with complimentary fruit champagne.",
+          xp: 85
+        },
+        {
+          text: "🍳 Could you arrange an English Breakfast room service delivery for 8:00 AM tomorrow?",
+          response: "Consider it arranged! Fresh scrambled eggs, toasted sourdough, and Earl Grey tea will arrive at 8 sharp.",
+          memoryTag: "Breakfast room service was scheduled.",
+          xp: 70
+        },
+        {
+          text: "🧳 May the bellhop bring my check-in luggage up to Suite #808?",
+          response: "Our bellhop team is already transporting your suitcases to your room, Miss Swathi.",
+          memoryTag: "Marcus ensured VIP baggage handling.",
+          xp: 65
+        },
+        {
+          text: "🚗 Is valet parking available for my sports car in the private underground garage?",
+          response: "Yes, our 24/7 valet service will park and charge your vehicle securely.",
+          memoryTag: "Your car was parked in the VIP underground bay.",
+          xp: 65
+        }
+      ]
     }
   ];
 
@@ -453,7 +519,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     // 1. Scene, Camera, WebGL Renderer
     const scene = new THREE.Scene();
     
-    // Dynamic Sky Color based on timeOfDay
     const skyColors: Record<TimeOfDay, number> = {
       day: 0x38bdf8,
       sunset: 0xf97316,
@@ -533,34 +598,49 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       worldGroup.add(sl);
     }
 
-    // Modern City Skyscrapers
-    const buildingColors = [0x0f172a, 0x1e1b4b, 0x1e293b, 0x090d16];
-    for (let i = 0; i < 10; i++) {
-      const h = 30 + Math.random() * 45;
-      const bMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(16, h, 16),
-        new THREE.MeshStandardMaterial({ color: buildingColors[i % buildingColors.length], roughness: 0.2, metalness: 0.6 })
-      );
-      bMesh.position.set(48 + (i % 2) * 18, h / 2, -90 + i * 20);
-      worldGroup.add(bMesh);
-    }
+    // --- GTA-STYLE GLOWING IN-WORLD INTERACTION BEACONS ---
+    // 🟢 Green Beacon (Starbucks)
+    const sbBeacon = new THREE.Mesh(
+      new THREE.CylinderGeometry(3.5, 3.5, 0.15, 32),
+      new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.55 })
+    );
+    sbBeacon.position.set(0, 0.08, -20);
+    worldGroup.add(sbBeacon);
+
+    // 🟡 Yellow Beacon (Airport Security)
+    const secBeacon = new THREE.Mesh(
+      new THREE.CylinderGeometry(3.5, 3.5, 0.15, 32),
+      new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.55 })
+    );
+    secBeacon.position.set(-68, 0.08, -10);
+    worldGroup.add(secBeacon);
+
+    // 🔵 Blue Beacon (Immigration Desk)
+    const immBeacon = new THREE.Mesh(
+      new THREE.CylinderGeometry(3.5, 3.5, 0.15, 32),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.55 })
+    );
+    immBeacon.position.set(-50, 0.08, -18);
+    worldGroup.add(immBeacon);
+
+    // 🔴 Red Beacon (Hotel Lobby)
+    const hotelBeacon = new THREE.Mesh(
+      new THREE.CylinderGeometry(3.5, 3.5, 0.15, 32),
+      new THREE.MeshBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.55 })
+    );
+    hotelBeacon.position.set(0, 0.08, 38);
+    worldGroup.add(hotelBeacon);
 
     // --- REALISTIC STARBUCKS RESERVE CAFE (North) ---
     const sbGroup = new THREE.Group();
     sbGroup.position.set(0, 0, -25);
 
-    // Hardwood Floor
-    const sbFloorMat = new THREE.MeshStandardMaterial({
-      map: createLuxuryWoodTexture(),
-      roughness: 0.25,
-      metalness: 0.1
-    });
+    const sbFloorMat = new THREE.MeshStandardMaterial({ map: createLuxuryWoodTexture(), roughness: 0.25, metalness: 0.1 });
     const sbFloor = new THREE.Mesh(new THREE.PlaneGeometry(36, 24), sbFloorMat);
     sbFloor.rotation.x = -Math.PI / 2;
     sbFloor.position.y = 0.05;
     sbGroup.add(sbFloor);
 
-    // Main Mahogany Counter
     const sbCounter = new THREE.Mesh(
       new THREE.BoxGeometry(24, 2.4, 4.5),
       new THREE.MeshStandardMaterial({ color: 0x3e2312, roughness: 0.2, metalness: 0.15 })
@@ -588,14 +668,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       sbGroup.add(tvScreen);
     });
 
-    // Mastrena II Espresso Machine
-    const espMachine = new THREE.Mesh(
-      new THREE.BoxGeometry(4.8, 2.0, 2.6),
-      new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.95, roughness: 0.1 })
-    );
-    espMachine.position.set(-6, 3.2, -6);
-    sbGroup.add(espMachine);
-
     // 👩‍🍳 3D PERSON 1: BARISTA HANA (Standing behind counter)
     const baristaHanaModel = createHumanoidModel(0x006241); // Green Apron
     baristaHanaModel.position.set(0, 0, -8.2);
@@ -607,7 +679,6 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     const airportGroup = new THREE.Group();
     airportGroup.position.set(-50, 0, 0);
 
-    // Terminal Floor
     const aFloor = new THREE.Mesh(new THREE.PlaneGeometry(60, 80), new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1, metalness: 0.2 }));
     aFloor.rotation.x = -Math.PI / 2;
     aFloor.position.y = 0.06;
@@ -656,32 +727,18 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     fidsTv.position.set(0, 10, -22);
     airportGroup.add(fidsTv);
 
-    // Security Metal Detector Arch
-    const dyGate = new THREE.Mesh(
-      new THREE.BoxGeometry(6, 4, 1.2),
-      new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.7 })
-    );
-    dyGate.position.set(-15, 2, -10);
-    airportGroup.add(dyGate);
-
-    // 👮‍♂️ 3D PERSON 2: SECURITY OFFICER VIKRAM (Beside metal detector)
-    const officerVikramModel = createHumanoidModel(0xd97706); // Khaki CISF Security Uniform
+    // 👮‍♂️ 3D PERSON 2: SECURITY OFFICER VIKRAM
+    const officerVikramModel = createHumanoidModel(0xd97706);
     officerVikramModel.position.set(-18, 0, -10);
     airportGroup.add(officerVikramModel);
 
-    // 🛂 3D PERSON 3: IMMIGRATION OFFICER DAVID (At passport booth)
-    const officerDavidModel = createHumanoidModel(0x1e1b4b); // Navy Border Control
+    // 🛂 3D PERSON 3: IMMIGRATION OFFICER DAVID
+    const officerDavidModel = createHumanoidModel(0x1e1b4b);
     officerDavidModel.position.set(0, 0, -18);
     airportGroup.add(officerDavidModel);
 
-    // 👨‍✈️ 3D PERSON 4: CHECK-IN AGENT RAJESH (At baggage scale)
-    const agentRajeshModel = createHumanoidModel(0x0284c7); // Singapore Airlines Suit
-    agentRajeshModel.position.set(15, 0, -10);
-    airportGroup.add(agentRajeshModel);
-
-    // ✈️ 3D REAL BOEING 787 DREAMLINER AIRPLANE MODEL!
+    // ✈️ 3D REAL BOEING 787 DREAMLINER AIRPLANE
     const planeGroup = new THREE.Group();
-    // Fuselage Tube
     const planeBody = new THREE.Mesh(
       new THREE.CylinderGeometry(3.5, 3.5, 32, 24),
       new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.8, roughness: 0.2 })
@@ -690,26 +747,12 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     planeBody.position.set(0, 6, 28);
     planeGroup.add(planeBody);
 
-    // Wings
     const planeWings = new THREE.Mesh(
       new THREE.BoxGeometry(34, 0.4, 6),
       new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.8 })
     );
     planeWings.position.set(0, 5.5, 26);
     planeGroup.add(planeWings);
-
-    // Tail Fin
-    const planeTail = new THREE.Mesh(
-      new THREE.BoxGeometry(0.4, 7, 5),
-      new THREE.MeshStandardMaterial({ color: 0x002060, metalness: 0.9 })
-    );
-    planeTail.position.set(0, 9.5, 40);
-    planeGroup.add(planeTail);
-
-    // 👩‍✈️ 3D PERSON 5: FLIGHT ATTENDANT CHLOE (At plane boarding door)
-    const attendantChloeModel = createHumanoidModel(0x881337); // Singapore Airlines Cabin Kebaya
-    attendantChloeModel.position.set(-4.5, 4.5, 20);
-    planeGroup.add(attendantChloeModel);
 
     airportGroup.add(planeGroup);
     worldGroup.add(airportGroup);
@@ -718,19 +761,17 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     const hotelGroup = new THREE.Group();
     hotelGroup.position.set(0, 0, 35);
 
-    // Luxury Red Carpet Floor
     const hFloor = new THREE.Mesh(new THREE.PlaneGeometry(40, 24), new THREE.MeshStandardMaterial({ color: 0x881337, roughness: 0.4 }));
     hFloor.rotation.x = -Math.PI / 2;
     hFloor.position.y = 0.06;
     hotelGroup.add(hFloor);
 
-    // Reception Desk
     const hDesk = new THREE.Mesh(new THREE.BoxGeometry(18, 2.4, 3.5), new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.8, roughness: 0.2 }));
     hDesk.position.set(0, 1.2, 6);
     hotelGroup.add(hDesk);
 
-    // 🤵 3D PERSON 6: CONCIERGE MARCUS (At front desk)
-    const conciergeMarcusModel = createHumanoidModel(0x450a0a); // 5-Star Burgundy Concierge Tuxedo
+    // 🤵 3D PERSON 4: CONCIERGE MARCUS
+    const conciergeMarcusModel = createHumanoidModel(0x450a0a);
     conciergeMarcusModel.position.set(0, 0, 7.8);
     hotelGroup.add(conciergeMarcusModel);
 
@@ -784,7 +825,8 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       }
       if (e.code === 'KeyE' && nearbyNpc) {
         sound.playClick();
-        setActiveNpcDialogue(nearbyNpc);
+        setActiveTelltaleDialogue(nearbyNpc);
+        setSelectedChoice(null);
       }
       if (e.code === 'Space' && playerState.current.isGrounded && !isDriving) {
         playerState.current.vy = 0.26;
@@ -799,12 +841,19 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
 
-    // 5. 60 FPS Game Loop with NPC Proximity Detection
+    // 5. 60 FPS Game Loop
     let animId: number;
     let tick = 0;
 
     const animate = () => {
       tick++;
+
+      // Pulse beacon opacity like GTA
+      const beaconGlow = 0.4 + Math.sin(tick * 0.08) * 0.25;
+      sbBeacon.material.opacity = beaconGlow;
+      secBeacon.material.opacity = beaconGlow;
+      immBeacon.material.opacity = beaconGlow;
+      hotelBeacon.material.opacity = beaconGlow;
 
       // Animate Waterfall Particles
       if (waterfallParticles) {
@@ -821,20 +870,12 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       // Check Proximity to 3D NPCs in the world
       const px = playerState.current.x;
       const pz = playerState.current.z;
-      let foundNpc: NPCData | null = null;
+      let foundNpc: TelltaleNPCData | null = null;
 
-      // Barista Hana @ (0, -33.2)
-      if (Math.hypot(px - 0, pz - (-33.2)) < 6) foundNpc = npcs[0];
-      // Security Officer Vikram @ (-68, -10)
-      else if (Math.hypot(px - (-68), pz - (-10)) < 6) foundNpc = npcs[1];
-      // Immigration Officer David @ (-50, -18)
-      else if (Math.hypot(px - (-50), pz - (-18)) < 6) foundNpc = npcs[2];
-      // Check-in Agent Rajesh @ (-35, -10)
-      else if (Math.hypot(px - (-35), pz - (-10)) < 6) foundNpc = npcs[3];
-      // Flight Attendant Chloe @ (-54.5, 20)
-      else if (Math.hypot(px - (-54.5), pz - 20) < 8) foundNpc = npcs[4];
-      // Concierge Marcus @ (0, 42.8)
-      else if (Math.hypot(px - 0, pz - 42.8) < 6) foundNpc = npcs[5];
+      if (Math.hypot(px - 0, pz - (-20)) < 6) foundNpc = telltaleNPCs[0]; // Hana
+      else if (Math.hypot(px - (-68), pz - (-10)) < 6) foundNpc = telltaleNPCs[1]; // Vikram
+      else if (Math.hypot(px - (-50), pz - (-18)) < 6) foundNpc = telltaleNPCs[2]; // David
+      else if (Math.hypot(px - 0, pz - 38) < 6) foundNpc = telltaleNPCs[3]; // Marcus
 
       setNearbyNpc(foundNpc);
 
@@ -1019,23 +1060,31 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Telltale Memory Notification Bar (Like "Hana will remember that...") */}
+      {telltaleNotification && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 border-2 border-amber-400 text-amber-200 px-6 py-3 rounded-2xl shadow-2xl font-mono text-xs sm:text-sm font-bold flex items-center gap-2 animate-bounce">
+          <Sparkles className="w-4 h-4 text-amber-400 animate-spin" />
+          <span>💭 {telltaleNotification}</span>
+        </div>
+      )}
+
       {/* Top Banner with Real-Time Sky, Smartphone Launcher & Sector Teleporters */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 rounded-3xl border-2 border-indigo-500/40 shadow-2xl relative overflow-hidden">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-xs font-bold uppercase tracking-wider border border-indigo-500/30">
               <Sparkles className="w-3.5 h-3.5 animate-spin text-amber-400" />
-              Ultimate 3D Real Open-World Life Simulator with 3D Persons
+              GTA 5 + Telltale Style 3D Real Life Simulator Engine
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1 flex items-center gap-3">
-              🌍 Real Open-World: Walk Up to People, Talk, Order & Fly!
+              🎮 GTA-Style Open World & Telltale Story Choices
             </h2>
             <p className="text-indigo-200/80 text-xs sm:text-sm max-w-2xl mt-0.5">
-              100% Free Roam! Walk up to Barista Hana in Starbucks, Security Guard Vikram & Officer David in the airport, Flight Attendant Chloe at the Boeing 787 plane, and Concierge Marcus in the hotel!
+              100% Free Roam! Walk into glowing GTA beacons, interact directly with 3D people, pick your dialogue branches, drive sports cars, and fly through airport gates!
             </p>
           </div>
 
-          {/* Time of Day & Teleporters */}
+          {/* Quick Teleporters & Settings */}
           <div className="flex flex-wrap items-center gap-2 bg-slate-950/90 p-2 rounded-2xl border border-slate-800">
             <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-700">
               <button
@@ -1071,49 +1120,49 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
               }}
               className="px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer"
             >
-              👩‍🍳 Barista Hana
+              🟢 Starbucks Beacon
+            </button>
+            <button
+              onClick={() => {
+                sound.playClick();
+                playerState.current.x = -68;
+                playerState.current.z = -10;
+                setIsDriving(false);
+                setCurrentLocationName('Airport Security Checkpoint');
+              }}
+              className="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer"
+            >
+              🟡 Security Beacon
             </button>
             <button
               onClick={() => {
                 sound.playClick();
                 playerState.current.x = -50;
-                playerState.current.z = 0;
+                playerState.current.z = -18;
                 setIsDriving(false);
-                setCurrentLocationName('Singapore Changi Jewel');
+                setCurrentLocationName('Passport Immigration Desk');
               }}
               className="px-3 py-2 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer"
             >
-              👮‍♂️ Airport Guards
-            </button>
-            <button
-              onClick={() => {
-                sound.playClick();
-                playerState.current.x = -50;
-                playerState.current.z = 20;
-                setIsDriving(false);
-                setCurrentLocationName('Boeing 787 Plane Door');
-              }}
-              className="px-3 py-2 bg-pink-500 hover:bg-pink-400 text-white font-bold text-xs rounded-xl shadow cursor-pointer"
-            >
-              ✈️ Boeing 787 Plane
+              🔵 Immigration Beacon
             </button>
             <button
               onClick={() => {
                 sound.playClick();
                 playerState.current.x = 0;
-                playerState.current.z = 32;
+                playerState.current.z = 38;
                 setIsDriving(false);
                 setCurrentLocationName('Grand Marina Hotel Lobby');
               }}
               className="px-3 py-2 bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer"
             >
-              🏨 Concierge Marcus
+              🔴 Hotel Beacon
             </button>
           </div>
         </div>
       </div>
 
-      {/* 3D Viewport with Dual Joysticks, NPC Proximity Prompt & Live People */}
+      {/* 3D Viewport with Dual Joysticks & GTA Interaction Trigger */}
       <div className="relative rounded-3xl overflow-hidden border-2 border-indigo-500/40 bg-slate-950 shadow-2xl">
         <div ref={mountRef} className="w-full h-[560px] cursor-grab active:cursor-grabbing bg-slate-950" />
 
@@ -1135,18 +1184,19 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
           </div>
         </div>
 
-        {/* 💬 FLOATING NEARBY PERSON PROMPT (When walking near an NPC) */}
+        {/* 💬 GTA-STYLE INTERACTION BUTTON PROMPT (Appears when near beacon or person) */}
         {nearbyNpc && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 animate-bounce">
             <button
               onClick={() => {
                 sound.playClick();
-                setActiveNpcDialogue(nearbyNpc);
+                setActiveTelltaleDialogue(nearbyNpc);
+                setSelectedChoice(null);
               }}
-              className="px-5 py-3 bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-500 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-2xl border-2 border-white flex items-center gap-2 cursor-pointer hover:scale-105 transition-all"
+              className="px-6 py-3.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-sky-400 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-2xl border-2 border-white flex items-center gap-2 cursor-pointer hover:scale-105 transition-all"
             >
-              <MessageSquare className="w-4 h-4" />
-              <span>{nearbyNpc.avatar} Talk to {nearbyNpc.name} ({nearbyNpc.role}) [Press E]</span>
+              <MessageSquare className="w-5 h-5 text-slate-950" />
+              <span>{nearbyNpc.avatar} Talk to {nearbyNpc.name} ({nearbyNpc.role}) [Press E or Tap]</span>
             </button>
           </div>
         )}
@@ -1298,70 +1348,87 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
         </div>
       </div>
 
-      {/* 💬 LIVE 3D NPC CONVERSATION DIALOGUE POPUP */}
-      {activeNpcDialogue && (
-        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
-          <div className="bg-slate-900 border-2 border-emerald-500/60 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 my-8">
+      {/* 🎬 TELLTALE / WALKING DEAD STYLE INTERACTIVE CINEMATIC DIALOGUE HUD */}
+      {activeTelltaleDialogue && (
+        <div className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
+          <div className="bg-slate-900 border-2 border-amber-500/60 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl space-y-6 my-8">
             <div className="flex items-start justify-between border-b border-slate-800 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-3xl font-black">
-                  {activeNpcDialogue.avatar}
+                <div className="w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-3xl font-black">
+                  {activeTelltaleDialogue.avatar}
                 </div>
                 <div>
-                  <span className="text-xs font-black uppercase tracking-wider text-emerald-400">{activeNpcDialogue.location}</span>
-                  <h3 className="text-2xl font-black text-white">{activeNpcDialogue.name}</h3>
-                  <p className="text-xs text-slate-400">{activeNpcDialogue.role}</p>
+                  <span className="text-xs font-black uppercase tracking-wider text-amber-400">{activeTelltaleDialogue.location}</span>
+                  <h3 className="text-2xl font-black text-white">{activeTelltaleDialogue.name}</h3>
+                  <p className="text-xs text-slate-400">{activeTelltaleDialogue.role}</p>
                 </div>
               </div>
               <button
-                onClick={() => setActiveNpcDialogue(null)}
+                onClick={() => setActiveTelltaleDialogue(null)}
                 className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold"
               >
-                ✕ Close
+                ✕ Exit Conversation
               </button>
             </div>
 
-            {/* NPC Speech Greeting */}
-            <div className="p-4 bg-slate-950 rounded-2xl border border-emerald-500/30 space-y-2">
+            {/* NPC Speech Line with Voice Playback */}
+            <div className="p-4 bg-slate-950 rounded-2xl border border-amber-500/30 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">{activeNpcDialogue.name} says:</span>
-                <AudioSpeakButton text={activeNpcDialogue.greeting} label="Listen NPC" className="bg-emerald-500 text-slate-950 font-bold text-xs px-3 py-1 rounded-xl" />
+                <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">{activeTelltaleDialogue.name} says:</span>
+                <AudioSpeakButton text={activeTelltaleDialogue.greeting} label="Listen NPC" className="bg-amber-500 text-slate-950 font-bold text-xs px-3 py-1 rounded-xl" />
               </div>
               <p className="text-sm text-white font-medium leading-relaxed">
-                "{activeNpcDialogue.greeting}"
+                "{activeTelltaleDialogue.greeting}"
               </p>
             </div>
 
-            {/* Player Response Speech Practice */}
-            <div className="p-4 bg-slate-950 rounded-2xl border border-sky-500/30 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-sky-400 uppercase tracking-wider">Your Spoken English Response:</span>
-                <AudioSpeakButton text={activeNpcDialogue.script} label="Listen Target" className="bg-sky-500 text-slate-950 font-bold text-xs px-3 py-1 rounded-xl" />
+            {/* Telltale 4-Way Dialogue Choice Wheel */}
+            <div className="space-y-3">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Choose Swathi's Spoken Response:</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {activeTelltaleDialogue.choices.map((choice, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setSelectedChoice(choice);
+                      sound.playClick();
+                      setTelltaleNotification(choice.memoryTag);
+                      setTimeout(() => setTelltaleNotification(null), 4000);
+                    }}
+                    className={`p-4 rounded-2xl border text-left font-bold transition-all flex flex-col justify-between gap-2 cursor-pointer ${selectedChoice === choice ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 border-white shadow-xl scale-[1.02]' : 'bg-slate-950 text-slate-200 border-slate-800 hover:bg-slate-800'}`}
+                  >
+                    <span>{choice.text}</span>
+                    <span className="text-[10px] opacity-75 font-mono">+{choice.xp} XP • Choice #{idx + 1}</span>
+                  </button>
+                ))}
               </div>
-              <p className="text-xs text-sky-100 font-semibold leading-relaxed">
-                "{activeNpcDialogue.script}"
-              </p>
-              <VoiceSpeechPractice
-                targetPhrase={activeNpcDialogue.script}
-                phraseMeaning={activeNpcDialogue.explanation}
-                accentColor="emerald"
-                onSuccess={() => {
-                  sound.playSuccess();
-                  confetti({ particleCount: 90, spread: 80 });
-                  onAddXp(activeNpcDialogue.xpReward, `Completed Conversation with ${activeNpcDialogue.name}! 🎤✨`);
-                }}
-              />
             </div>
 
-            <button
-              onClick={() => {
-                sound.playSuccess();
-                setActiveNpcDialogue(null);
-              }}
-              className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black rounded-2xl shadow-xl text-xs uppercase tracking-wider cursor-pointer"
-            >
-              ✓ Thank {activeNpcDialogue.name} & Continue Exploring
-            </button>
+            {/* If choice selected, show response and live microphone practice */}
+            {selectedChoice && (
+              <div className="p-4 bg-slate-950 rounded-2xl border border-emerald-500/40 space-y-3 animate-fadeIn">
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-emerald-400 uppercase">{activeTelltaleDialogue.name}'s Reply:</span>
+                  <p className="text-xs text-white">"{selectedChoice.response}"</p>
+                </div>
+
+                <div className="border-t border-slate-800 pt-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-sky-400">Practice Pronouncing Your Response:</span>
+                    <AudioSpeakButton text={selectedChoice.text} label="Listen Target" className="bg-sky-500 text-slate-950 font-bold text-xs px-3 py-1 rounded-xl" />
+                  </div>
+                  <VoiceSpeechPractice
+                    targetPhrase={selectedChoice.text}
+                    accentColor="emerald"
+                    onSuccess={() => {
+                      sound.playSuccess();
+                      confetti({ particleCount: 90, spread: 80 });
+                      onAddXp(selectedChoice.xp, `Mastered Spoken Choice with ${activeTelltaleDialogue.name}! 🎤✨`);
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
