@@ -5,6 +5,7 @@ import { CoffeeDrink, CupStyle, StarbucksFoodItem, CondimentItem } from '../../t
 import { AudioSpeakButton } from '../AudioSpeakButton';
 import { VoiceSpeechPractice } from '../VoiceSpeechPractice';
 import { AnimeCafeSimulatorGame } from './AnimeCafeSimulatorGame';
+import { RealisticWorldSimulator } from './RealisticWorldSimulator';
 import { sound } from '../../utils/audio';
 import {
   Coffee,
@@ -33,7 +34,7 @@ interface StarbucksBaristaShopProps {
 }
 
 export const StarbucksBaristaShop: React.FC<StarbucksBaristaShopProps> = ({ onAddXp }) => {
-  const [activeShopMode, setActiveShopMode] = useState<'anime_game_simulator' | 'barista_builder' | 'visual_cups_guide' | 'best_worst_combos' | 'vocabulary_dictionary' | 'cashier_sim'>('anime_game_simulator');
+  const [activeShopMode, setActiveShopMode] = useState<'real_world_3d_experience' | 'anime_game_simulator' | 'barista_builder' | 'visual_cups_guide' | 'best_worst_combos' | 'vocabulary_dictionary' | 'cashier_sim'>('real_world_3d_experience');
   const [selectedDrink, setSelectedDrink] = useState<CoffeeDrink>(coffeeDrinks[0]);
   const [cupStyle, setCupStyle] = useState<CupStyle>('iced_clear_plastic');
   const [selectedFood, setSelectedFood] = useState<StarbucksFoodItem>(STARBUCKS_FOOD_ITEMS[0]);
@@ -270,7 +271,8 @@ export const StarbucksBaristaShop: React.FC<StarbucksBaristaShopProps> = ({ onAd
         {/* Mode Switcher Tabs */}
         <div className="flex items-center gap-2 mt-6 overflow-x-auto no-scrollbar border-t border-emerald-900/60 pt-4">
           {[
-            { id: 'anime_game_simulator', label: '🎮 2D Anime Cafe Simulator Game', count: '60 FPS Canvas Engine' },
+            { id: 'real_world_3d_experience', label: '🌍 3D Real Starbucks (Order, Sit & Sip)', count: 'Full Life Simulator' },
+            { id: 'anime_game_simulator', label: '🎮 2D Anime Barista Crafting Game', count: '60 FPS Canvas Engine' },
             { id: 'barista_builder', label: '☕ Build & Customize Drinks', count: 'Visual Layer Builder' },
             { id: 'visual_cups_guide', label: '🖼️ Visual Cups & Drink Anatomy', count: 'Real Illustrated Guide' },
             { id: 'best_worst_combos', label: '🌟 Best vs Worst Combos', count: 'Secrets & Mistakes' },
@@ -297,6 +299,11 @@ export const StarbucksBaristaShop: React.FC<StarbucksBaristaShopProps> = ({ onAd
           ))}
         </div>
       </div>
+
+      {/* 🌍 3D REAL-WORLD STARBUCKS EXPERIENCE */}
+      {activeShopMode === 'real_world_3d_experience' && (
+        <RealisticWorldSimulator onAddXp={onAddXp} />
+      )}
 
       {/* 🎮 2D ANIME CAFE SIMULATOR GAME */}
       {activeShopMode === 'anime_game_simulator' && (
