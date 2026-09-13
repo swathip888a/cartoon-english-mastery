@@ -5,68 +5,43 @@ import { VoiceSpeechPractice } from '../VoiceSpeechPractice';
 import { sound } from '../../utils/audio';
 import confetti from 'canvas-confetti';
 import {
-  Compass,
-  MapPin,
   Sparkles,
   Volume2,
   Mic,
-  CheckCircle2,
   Plane,
   Coffee,
-  RotateCcw,
-  Zap,
-  Info,
-  ShieldCheck,
-  ChevronRight,
-  ExternalLink,
-  Award,
-  Layers,
-  FileText,
-  Hotel,
-  ShoppingBag,
-  Clock,
-  User,
-  Check,
-  CreditCard,
-  Luggage,
-  Smile,
-  Maximize2,
-  Eye,
   Sun,
   Moon,
   Car,
-  Gauge,
   Navigation,
   Key,
   Flame,
-  ArrowUpRight,
-  Tv,
-  Utensils,
-  Camera,
   Radio,
-  Play,
   ArrowUp,
   ArrowDown,
   ArrowLeft,
   ArrowRight,
   Shield,
   Sunset,
-  CloudRain,
-  Sliders,
-  CheckSquare,
   Bed,
   PhoneCall,
-  Bell,
   Smartphone,
   Music,
-  Shirt,
-  Heart,
-  QrCode,
-  VolumeX,
-  Banknote,
-  Film,
+  CreditCard,
+  Luggage,
+  Award,
+  Maximize2,
   MessageSquare,
-  FlameKindling
+  VolumeX,
+  Camera,
+  Star,
+  DollarSign,
+  Compass,
+  AlertTriangle,
+  CheckCircle2,
+  ChevronRight,
+  Send,
+  UserCheck
 } from 'lucide-react';
 
 interface UltimateRealOpenWorldEngineProps {
@@ -75,13 +50,16 @@ interface UltimateRealOpenWorldEngineProps {
 }
 
 type TimeOfDay = 'day' | 'sunset' | 'night' | 'neon';
-type VehicleType = 'sports_sedan' | 'luxury_suv';
+type VehicleModel = 'sports_sedan' | 'luxury_suv' | 'police_cruiser';
+type WeaponItem = 'unarmed' | 'phone' | 'coffee' | 'card' | 'keycard' | 'boarding_pass';
 
 interface TelltaleChoice {
   text: string;
   response: string;
   memoryTag: string;
   xp: number;
+  cash: number;
+  respect: number;
 }
 
 interface TelltaleNPCData {
@@ -90,25 +68,144 @@ interface TelltaleNPCData {
   role: string;
   location: string;
   avatar: string;
+  gtaTitle: string;
   greeting: string;
   choices: TelltaleChoice[];
 }
 
-// Procedural Photorealistic Textures
+// Procedural GTA Audio Synthesizer (Engine Revs, Horn, Sirens, Mission Passed)
+class GTAAudioEngine {
+  private ctx: AudioContext | null = null;
+  private engineOsc: OscillatorNode | null = null;
+  private engineGain: GainNode | null = null;
+
+  init() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (AudioCtx) {
+        this.ctx = new AudioCtx();
+      }
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  }
+
+  playHorn() {
+    this.init();
+    if (!this.ctx) return;
+    const osc1 = this.ctx.createOscillator();
+    const osc2 = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc1.type = 'sawtooth';
+    osc2.type = 'triangle';
+    osc1.frequency.setValueAtTime(440, this.ctx.currentTime);
+    osc2.frequency.setValueAtTime(370, this.ctx.currentTime);
+
+    gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.6);
+
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc1.start();
+    osc2.start();
+    osc1.stop(this.ctx.currentTime + 0.6);
+    osc2.stop(this.ctx.currentTime + 0.6);
+  }
+
+  playPoliceSiren() {
+    this.init();
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    
+    const now = this.ctx.currentTime;
+    osc.frequency.setValueAtTime(650, now);
+    osc.frequency.linearRampToValueAtTime(950, now + 0.3);
+    osc.frequency.linearRampToValueAtTime(650, now + 0.6);
+    osc.frequency.linearRampToValueAtTime(950, now + 0.9);
+    osc.frequency.linearRampToValueAtTime(650, now + 1.2);
+
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 1.3);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(now + 1.3);
+  }
+
+  playMissionPassed() {
+    this.init();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const chords = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+    chords.forEach((freq, idx) => {
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+      gain.gain.setValueAtTime(0.3, now + idx * 0.12);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 1.2);
+      osc.connect(gain);
+      gain.connect(this.ctx!.destination);
+      osc.start(now + idx * 0.12);
+      osc.stop(now + idx * 0.12 + 1.2);
+    });
+  }
+
+  startEngineSound() {
+    this.init();
+    if (!this.ctx || this.engineOsc) return;
+    try {
+      this.engineOsc = this.ctx.createOscillator();
+      this.engineGain = this.ctx.createGain();
+      this.engineOsc.type = 'sawtooth';
+      this.engineOsc.frequency.setValueAtTime(55, this.ctx.currentTime);
+      this.engineGain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+
+      this.engineOsc.connect(this.engineGain);
+      this.engineGain.connect(this.ctx.destination);
+      this.engineOsc.start();
+    } catch {}
+  }
+
+  updateEnginePitch(speedRatio: number) {
+    if (this.ctx && this.engineOsc) {
+      const targetFreq = 55 + speedRatio * 180;
+      this.engineOsc.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.05);
+    }
+  }
+
+  stopEngineSound() {
+    if (this.engineOsc) {
+      try {
+        this.engineOsc.stop();
+        this.engineOsc.disconnect();
+      } catch {}
+      this.engineOsc = null;
+    }
+  }
+}
+
+const gtaAudio = new GTAAudioEngine();
+
+// Procedural Photorealistic Canvas Textures
 function createLuxuryWoodTexture(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 512;
   const ctx = canvas.getContext('2d')!;
-  
   ctx.fillStyle = '#3e2312';
   ctx.fillRect(0, 0, 512, 512);
 
   for (let y = 0; y < 512; y += 48) {
     ctx.fillStyle = (y / 48) % 2 === 0 ? '#4a2c17' : '#381f0e';
     ctx.fillRect(0, y, 512, 46);
-    
-    // Fine wood grain
     ctx.strokeStyle = 'rgba(0,0,0,0.18)';
     ctx.lineWidth = 1;
     for (let i = 0; i < 6; i++) {
@@ -118,7 +215,6 @@ function createLuxuryWoodTexture(): THREE.CanvasTexture {
       ctx.stroke();
     }
   }
-
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
@@ -126,16 +222,14 @@ function createLuxuryWoodTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-function createPolishedMarbleTexture(): THREE.CanvasTexture {
+function createPolishedGraniteTexture(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 512;
   const ctx = canvas.getContext('2d')!;
-
-  ctx.fillStyle = '#1e293b'; // Slate Marble
+  ctx.fillStyle = '#1e293b';
   ctx.fillRect(0, 0, 512, 512);
 
-  // Marble Veins
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
   ctx.lineWidth = 2;
   for (let v = 0; v < 8; v++) {
@@ -144,7 +238,6 @@ function createPolishedMarbleTexture(): THREE.CanvasTexture {
     ctx.bezierCurveTo(Math.random() * 512, 200, Math.random() * 512, 350, Math.random() * 512, 512);
     ctx.stroke();
   }
-
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
@@ -159,12 +252,11 @@ function createStarbucksMenuScreenTexture(category: 'espresso' | 'hot_choc' | 'p
   const ctx = canvas.getContext('2d')!;
 
   const bgGrad = ctx.createLinearGradient(0, 0, 1024, 512);
-  bgGrad.addColorStop(0, '#064e3b'); // Starbucks Green
+  bgGrad.addColorStop(0, '#064e3b');
   bgGrad.addColorStop(1, '#022c22');
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, 1024, 512);
 
-  // Frame & Logo
   ctx.strokeStyle = '#34d399';
   ctx.lineWidth = 14;
   ctx.strokeRect(7, 7, 1010, 498);
@@ -172,9 +264,9 @@ function createStarbucksMenuScreenTexture(category: 'espresso' | 'hot_choc' | 'p
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 36px Inter, sans-serif';
   ctx.fillText(
-    category === 'espresso' ? '☕ STARBUCKS RESERVE ESPRESSO & CLASSICS' :
-    category === 'hot_choc' ? '🍫 HOT CHOCOLATES, OAT MILK & SWEET COLD FOAM' :
-    '🥪 ARTISAN BAKERY & WARMED FOCACCIA PANINIS',
+    category === 'espresso' ? '☕ BEAN MACHINE / STARBUCKS RESERVE' :
+    category === 'hot_choc' ? '🍫 HOT CHOCOLATES, OAT MILK & COLD FOAM' :
+    '🥪 ARTISAN BAKERY & TOASTED PANINIS',
     40, 60
   );
 
@@ -183,61 +275,34 @@ function createStarbucksMenuScreenTexture(category: 'espresso' | 'hot_choc' | 'p
   ctx.fillText('HOT & ICED • SHORT (8oz) / TALL (12oz) / GRANDE (16oz) / VENTI (20oz)', 40, 95);
 
   ctx.font = 'bold 28px Inter, sans-serif';
-  if (category === 'espresso') {
-    const items = [
-      { name: 'Caffè Latte', price: '$4.95', sub: 'Espresso with rich steamed milk and light microfoam' },
-      { name: 'Caramel Macchiato', price: '$5.45', sub: 'Steamed vanilla milk marked with espresso and caramel drizzle' },
-      { name: 'Blonde Vanilla Latte', price: '$5.25', sub: 'Smooth blonde espresso roast with oat milk & vanilla' },
-      { name: 'Caffè Mocha', price: '$5.35', sub: 'Bittersweet cocoa, espresso, steamed milk, and whipped cream' },
-    ];
-    items.forEach((it, idx) => {
-      const y = 165 + idx * 80;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText(it.name, 40, y);
-      ctx.fillStyle = '#34d399';
-      ctx.fillText(it.price, 850, y);
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = '18px sans-serif';
-      ctx.fillText(it.sub, 40, y + 26);
-      ctx.font = 'bold 28px Inter, sans-serif';
-    });
-  } else if (category === 'hot_choc') {
-    const items = [
-      { name: 'Signature Hot Chocolate', price: '$4.85', sub: 'Swathi\'s Pick ⭐ Oat Milk + Blonde Shot + 3x Vanilla + Cold Foam' },
-      { name: 'White Hot Chocolate', price: '$4.95', sub: 'Rich buttery white chocolate sauce blended with steamed milk' },
-      { name: 'Vanilla Sweet Cold Foam (Add-on)', price: '+$1.25', sub: 'Velvety cold cream cloud sitting on top for hot-cold contrast' },
-      { name: 'Blonde Espresso Shot (Add-on)', price: '+$1.00', sub: 'Cuts chocolate sweetness with subtle nutty crema aroma' },
-    ];
-    items.forEach((it, idx) => {
-      const y = 165 + idx * 80;
-      ctx.fillStyle = idx === 0 ? '#fde047' : '#ffffff';
-      ctx.fillText(it.name, 40, y);
-      ctx.fillStyle = '#34d399';
-      ctx.fillText(it.price, 850, y);
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = '18px sans-serif';
-      ctx.fillText(it.sub, 40, y + 26);
-      ctx.font = 'bold 28px Inter, sans-serif';
-    });
-  } else {
-    const items = [
-      { name: 'Tomato & Mozzarella Focaccia Panini', price: '$6.45', sub: 'Fresh mozzarella, roasted tomatoes, basil pesto (Warmed Up 🔥)' },
-      { name: 'Bacon, Gouda & Egg Sandwich', price: '$5.95', sub: 'Applewood smoked bacon & aged Gouda on artisan roll' },
-      { name: 'All-Butter French Croissant', price: '$3.85', sub: 'Flaky golden layered pastry toasted in rapid TurboChef' },
-      { name: 'Oat Milk Substitution (Oatly Barista)', price: '+$0.70', sub: 'Creamy plant-based milk engineered for silky microfoam' },
-    ];
-    items.forEach((it, idx) => {
-      const y = 165 + idx * 80;
-      ctx.fillStyle = idx === 0 ? '#fde047' : '#ffffff';
-      ctx.fillText(it.name, 40, y);
-      ctx.fillStyle = '#34d399';
-      ctx.fillText(it.price, 850, y);
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = '18px sans-serif';
-      ctx.fillText(it.sub, 40, y + 26);
-      ctx.font = 'bold 28px Inter, sans-serif';
-    });
-  }
+  const items = category === 'espresso' ? [
+    { name: 'Caffè Latte', price: '$4.95', sub: 'Espresso with rich steamed milk and light microfoam' },
+    { name: 'Caramel Macchiato', price: '$5.45', sub: 'Steamed vanilla milk marked with espresso and caramel drizzle' },
+    { name: 'Blonde Vanilla Latte', price: '$5.25', sub: 'Smooth blonde espresso roast with oat milk & vanilla' },
+    { name: 'Caffè Mocha', price: '$5.35', sub: 'Bittersweet cocoa, espresso, steamed milk, and whipped cream' },
+  ] : category === 'hot_choc' ? [
+    { name: 'Signature Hot Chocolate', price: '$4.85', sub: 'Swathi\'s Pick ⭐ Oat Milk + Blonde Shot + 3x Vanilla + Cold Foam' },
+    { name: 'White Hot Chocolate', price: '$4.95', sub: 'Rich buttery white chocolate sauce blended with steamed milk' },
+    { name: 'Vanilla Sweet Cold Foam (Add-on)', price: '+$1.25', sub: 'Velvety cold cream cloud sitting on top for contrast' },
+    { name: 'Blonde Espresso Shot (Add-on)', price: '+$1.00', sub: 'Cuts chocolate sweetness with nutty crema aroma' },
+  ] : [
+    { name: 'Tomato & Mozzarella Focaccia Panini', price: '$6.45', sub: 'Fresh mozzarella, roasted tomatoes, basil pesto (Warmed 🔥)' },
+    { name: 'Bacon, Gouda & Egg Sandwich', price: '$5.95', sub: 'Applewood smoked bacon & aged Gouda on artisan roll' },
+    { name: 'All-Butter French Croissant', price: '$3.85', sub: 'Flaky golden layered pastry toasted in TurboChef' },
+    { name: 'Oat Milk Substitution (Oatly)', price: '+$0.70', sub: 'Creamy plant-based milk for silky microfoam' },
+  ];
+
+  items.forEach((it, idx) => {
+    const y = 165 + idx * 80;
+    ctx.fillStyle = idx === 0 ? '#fde047' : '#ffffff';
+    ctx.fillText(it.name, 40, y);
+    ctx.fillStyle = '#34d399';
+    ctx.fillText(it.price, 850, y);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '18px sans-serif';
+    ctx.fillText(it.sub, 40, y + 26);
+    ctx.font = 'bold 28px Inter, sans-serif';
+  });
 
   return new THREE.CanvasTexture(canvas);
 }
@@ -255,10 +320,9 @@ function createAirportFidsTexture(): THREE.CanvasTexture {
   ctx.lineWidth = 8;
   ctx.strokeRect(4, 4, 1016, 504);
 
-  // Header
   ctx.fillStyle = '#f59e0b';
   ctx.font = 'bold 36px monospace';
-  ctx.fillText('✈️ INTERNATIONAL DEPARTURES & TRANSIT (LIVE FIDS)', 40, 55);
+  ctx.fillText('✈️ LOS SANTOS INTL AIRPORT (LSIA DEPARTURES)', 40, 55);
 
   ctx.fillStyle = '#64748b';
   ctx.font = 'bold 20px monospace';
@@ -285,7 +349,7 @@ function createAirportFidsTexture(): THREE.CanvasTexture {
   return new THREE.CanvasTexture(canvas);
 }
 
-// 3D Humanoid Model Builder Helper
+// 3D GTA Humanoid Character Builder
 function createHumanoidModel(uniformColor: number, skinColor: number = 0xffedd5, hairColor: number = 0x3b1d11): THREE.Group {
   const group = new THREE.Group();
 
@@ -300,8 +364,8 @@ function createHumanoidModel(uniformColor: number, skinColor: number = 0xffedd5,
   hair.position.set(0, 2.15, -0.06);
   group.add(hair);
 
-  // Torso / Uniform
-  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.46, 1.1, 16), new THREE.MeshStandardMaterial({ color: uniformColor }));
+  // Torso / Jacket
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.46, 1.1, 16), new THREE.MeshStandardMaterial({ color: uniformColor, roughness: 0.3 }));
   torso.position.y = 1.25;
   torso.castShadow = true;
   group.add(torso);
@@ -322,24 +386,51 @@ function createHumanoidModel(uniformColor: number, skinColor: number = 0xffedd5,
 export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEngineProps> = ({ onAddXp }) => {
   const mountRef = useRef<HTMLDivElement | null>(null);
 
-  // Player & Simulation State
+  // GTA 5 Player Stats & Progression
   const [playerName] = useState<string>('Swathi');
+  const [cashBalance, setCashBalance] = useState<number>(2854920);
+  const [cashDelta, setCashDelta] = useState<{ amount: number; type: '+' | '-' } | null>(null);
+  const [healthPercent] = useState<number>(100);
+  const [armorPercent] = useState<number>(100);
+  const [specialAbilityPercent] = useState<number>(85);
+  const [wantedStars, setWantedStars] = useState<number>(0);
+  const [activeWeaponItem, setActiveWeaponItem] = useState<WeaponItem>('unarmed');
+  const [showWeaponWheel, setShowWeaponWheel] = useState<boolean>(false);
+
+  // GTA Radio Stations
+  const radioStations = [
+    { name: 'Los Santos Rock Radio', genre: 'Classic Rock', icon: '🎸' },
+    { name: 'Non-Stop Pop 100.7 FM', genre: 'Dance & Pop', icon: '🎧' },
+    { name: 'West Coast Classics', genre: 'Golden Era Rap', icon: '🎵' },
+    { name: 'Radio Mirror Park', genre: 'Synthwave & Indie', icon: '🌆' },
+    { name: 'Space 103.2 FM', genre: 'Funk & Soul', icon: '🕺' },
+    { name: 'Radio OFF', genre: 'Mute', icon: '🔇' }
+  ];
+  const [currentRadioIndex, setCurrentRadioIndex] = useState<number>(1);
+  const [showRadioHUD, setShowRadioHUD] = useState<boolean>(false);
+
+  // GTA 5 iFruit Smartphone State
+  const [showIFruitPhone, setShowIFruitPhone] = useState<boolean>(false);
+  const [phoneScreen, setPhoneScreen] = useState<'home' | 'contacts' | 'bank' | 'gps' | 'camera'>('home');
+
+  // GTA 5 Mission Passed Banner State
+  const [missionPassedData, setMissionPassedData] = useState<{ title: string; subtitle: string; xp: number; cash: number } | null>(null);
+
+  // Vehicle & World State
   const [isDriving, setIsDriving] = useState<boolean>(false);
   const [carSpeedKmH, setCarSpeedKmH] = useState<number>(0);
-  const [currentLocationName, setCurrentLocationName] = useState<string>('Kyoto Starbucks Reserve & City Plaza');
+  const [currentLocationName, setCurrentLocationName] = useState<string>('Vinewood Blvd & Bean Machine Plaza');
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('day');
-  const [activeVehicle, setActiveVehicle] = useState<VehicleType>('sports_sedan');
+  const [activeVehicle, setActiveVehicle] = useState<VehicleModel>('sports_sedan');
+  const [headlightsOn, setHeadlightsOn] = useState<boolean>(true);
 
-  // GTA-Style Proximity & Telltale Dialogue State
+  // Telltale / GTA Cinematic Dialogue System
   const [nearbyNpc, setNearbyNpc] = useState<TelltaleNPCData | null>(null);
   const [activeTelltaleDialogue, setActiveTelltaleDialogue] = useState<TelltaleNPCData | null>(null);
   const [selectedChoice, setSelectedChoice] = useState<TelltaleChoice | null>(null);
   const [telltaleNotification, setTelltaleNotification] = useState<string | null>(null);
 
-  // Modals
-  const [showSmartphoneModal, setShowSmartphoneModal] = useState<boolean>(false);
-
-  // --- DUAL ON-SCREEN VIRTUAL JOYSTICK STATE (MOUSE & TOUCH) ---
+  // Virtual Analog Touch Joystick
   const [leftStickPos, setLeftStickPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const leftStickVector = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const leftStickActive = useRef<boolean>(false);
@@ -348,156 +439,192 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
   const rightStickActive = useRef<boolean>(false);
   const cameraAngleYaw = useRef<number>(0);
 
-  // Telltale / Walking Dead Style Dialogue Datasets with Meaningful Choices
+  // Telltale NPC Dataset with GTA-Flavored English Dialogue
   const telltaleNPCs: TelltaleNPCData[] = [
     {
       id: 'barista_hana',
       name: 'Barista Hana',
       role: 'Starbucks Master Barista ☕',
+      gtaTitle: 'BEAN MACHINE RESERVE',
       location: 'Starbucks Reserve Counter',
       avatar: '👩‍🍳',
-      greeting: "Hi Swathi! Welcome to Starbucks Reserve. What can I handcrafted for you today?",
+      greeting: "Hey Swathi! Welcome to Bean Machine Reserve. What handcrafted gourmet order can I brew for you today?",
       choices: [
         {
-          text: "☕ Can I get a Short Signature Hot Chocolate with Oat Milk and Cold Foam, plus a warmed Tomato Panini?",
-          response: "Excellent gourmet taste! I'll craft that right away with steamed Oatly milk and pull a blonde shot for balance.",
-          memoryTag: "Hana was impressed by your precise coffee ordering mastery.",
-          xp: 80
+          text: "☕ Short Signature Hot Chocolate with Oat Milk, Blonde Espresso Shot & Cold Foam, plus a warmed Tomato Panini!",
+          response: "Top-tier custom recipe! Steaming the Oatly milk right now and pulling a blonde ristretto shot for that rich golden crema.",
+          memoryTag: "Hana marked you as a VIP Gourmet Connoisseur.",
+          xp: 100,
+          cash: 500,
+          respect: 25
         },
         {
-          text: "🥪 What do you recommend from the fresh bakery showcase today?",
-          response: "The Tomato & Mozzarella Focaccia Panini warmed up is our top favorite! It pairs heavenly with our cocoa drinks.",
-          memoryTag: "Hana appreciated your curiosity about the bakery.",
-          xp: 60
+          text: "🥪 What's the freshest warm bakery item in the glass showcase?",
+          response: "The Tomato & Fresh Mozzarella Focaccia toasted in the TurboChef oven! Golden crispy crust with basil pesto.",
+          memoryTag: "Hana shared the secret bakery special.",
+          xp: 75,
+          cash: 300,
+          respect: 20
         },
         {
-          text: "💳 Can I pay using Apple Pay and scan my Starbucks Rewards barcode?",
-          response: "Of course! Just hold your phone near the contactless reader. BEEP! Payment approved!",
-          memoryTag: "You collected 25 Starbucks Gold Stars.",
-          xp: 50
+          text: "💳 Can I tap with Apple Pay and scan my Starbucks Gold Card for 25 Stars?",
+          response: "Contactless payment approved with a beep! You just unlocked Gold Tier status.",
+          memoryTag: "You collected 25 Starbucks Loyalty Stars.",
+          xp: 60,
+          cash: 250,
+          respect: 15
         },
         {
-          text: "🥛 Do you have dairy-free Oatly Barista oat milk available?",
-          response: "Yes! Oatly Barista is our signature plant milk, engineered for rich, silky microfoam.",
+          text: "🥛 Do you have dairy-free Oatly Barista plant milk in stock?",
+          response: "Always in stock! Oatly Barista gives the smoothest microfoam texture for latte art.",
           memoryTag: "Hana noted your preference for plant-based milks.",
-          xp: 60
+          xp: 70,
+          cash: 350,
+          respect: 20
         }
       ]
     },
     {
       id: 'security_vikram',
-      name: 'Security Officer Vikram',
-      role: 'CISF Airport Security Guard 👮‍♂️',
+      name: 'Officer Vikram',
+      role: 'LSIA Airport Security Chief 👮‍♂️',
+      gtaTitle: 'LSIA TSA SECURITY CHECKPOINT',
       location: 'Airport Security Metal Detector',
       avatar: '👮‍♂️',
-      greeting: "Good afternoon, Ma'am. Please take out your electronic devices and liquids into the grey tray before stepping through the arch.",
+      greeting: "Good afternoon, Ma'am. Please place your electronics, liquids, and metallic items in the scanner tray before stepping through the detector.",
       choices: [
         {
-          text: "🛡️ Here is my laptop and liquids in the tray. May I step through the detector?",
-          response: "Thank you for your cooperation, Ma'am. Step through... BEEP (All clear!). Have a safe flight!",
-          memoryTag: "Officer Vikram stamped your boarding pass with a security clearance seal.",
-          xp: 80
+          text: "🛡️ Here is my laptop and liquids in the tray. May I step through the metal detector arch?",
+          response: "BEEP (Detector Green Light). Perfect! Your baggage scan is 100% clear. Have a first-class flight!",
+          memoryTag: "Officer Vikram stamped your boarding pass with Express Clearance.",
+          xp: 120,
+          cash: 600,
+          respect: 35
         },
         {
-          text: "⌚ Do I need to remove my wristwatch and winter jacket as well?",
-          response: "Yes please, place them in the small side basket. It ensures a quick and smooth screening.",
-          memoryTag: "Officer Vikram appreciated your proactive compliance.",
-          xp: 65
+          text: "⌚ Do I need to take off my Apple Watch and lightweight blazer jacket?",
+          response: "Yes please, place them in the small side basket for a swift and seamless screening.",
+          memoryTag: "Officer Vikram appreciated your proactive airport compliance.",
+          xp: 80,
+          cash: 400,
+          respect: 25
         },
         {
-          text: "🎫 Here is my physical boarding pass and passport for stamping.",
-          response: "Everything is in order. Gate B12 is straight ahead on the right concourse.",
-          memoryTag: "Officer Vikram directed you to Gate B12.",
-          xp: 60
+          text: "🎫 Here is my Singapore Airlines SQ 529 Boarding Pass and biometric passport.",
+          response: "Documents fully verified. Gate B12 is open for Boeing 787 boarding right through the duty-free wing.",
+          memoryTag: "Officer Vikram granted VIP Fast-Track access.",
+          xp: 90,
+          cash: 450,
+          respect: 30
         },
         {
-          text: "💧 Is a 100ml water bottle allowed through international security?",
-          response: "Only empty reusable bottles or sealed liquids under 100ml in clear zip bags are allowed.",
-          memoryTag: "You learned international IATA liquid restriction rules.",
-          xp: 70
+          text: "💧 What are the international liquid volume limits for carry-on luggage?",
+          response: "Liquids must be in containers of 100ml or less, placed inside one transparent resealable plastic bag.",
+          memoryTag: "You learned official IATA international airport regulations.",
+          xp: 85,
+          cash: 350,
+          respect: 20
         }
       ]
     },
     {
       id: 'officer_david',
-      name: 'Immigration Officer David',
-      role: 'Singapore ICA Border Control 🛂',
-      location: 'Immigration Passport Control',
+      name: 'Officer David',
+      role: 'Immigration & Border Control 🛂',
+      gtaTitle: 'INTERNATIONAL IMMIGRATION DESK',
+      location: 'Passport Border Control',
       avatar: '🛂',
-      greeting: "Passport and electronic SG Arrival Card please. What is the primary purpose and duration of your visit to Singapore?",
+      greeting: "Passport and electronic Arrival Card confirmation please. What is the primary purpose and duration of your stay?",
       choices: [
         {
-          text: "🛂 Good afternoon Officer. I am here for a 5-day vacation and cultural tour, staying at Marina Bay Sands.",
-          response: "Thank you Miss Swathi. Welcome to Singapore! *THUMP* (Passport Stamped). Enjoy the Jewel Waterfall!",
-          memoryTag: "Officer David granted a 30-day tourist entry pass.",
-          xp: 90
+          text: "🛂 Good afternoon Officer. I am visiting for a 5-day holiday and cultural tour, staying at Marina Bay Sands.",
+          response: "Biometrics and hotel voucher verified. *THUMP* (Passport Stamped). Welcome to Singapore, Miss Swathi!",
+          memoryTag: "Officer David granted a 30-Day Tourism Visa.",
+          xp: 150,
+          cash: 800,
+          respect: 50
         },
         {
-          text: "📋 I submitted my SG Arrival Card online yesterday. Here is the confirmation QR code.",
-          response: "Biometric match confirmed on our e-Gate system. Your paperwork is immaculate.",
-          memoryTag: "Officer David noted your complete digital documentation.",
-          xp: 85
+          text: "📋 I completed the SG Digital Arrival Card online. Here is the confirmation QR code.",
+          response: "Digital arrival record retrieved instantaneously. Smooth and efficient documentation.",
+          memoryTag: "Officer David commended your prompt digital registration.",
+          xp: 110,
+          cash: 500,
+          respect: 30
         },
         {
-          text: "🏨 Here is my confirmed hotel booking voucher and return flight ticket to Vizag.",
-          response: "Return travel itinerary verified. Proceed through the baggage reclaim hall.",
-          memoryTag: "You smoothly proved your onward travel itinerary.",
-          xp: 75
+          text: "🏨 Here is my return flight confirmation ticket to Visakhapatnam and hotel booking voucher.",
+          response: "Itinerary confirmed. Proceed through the Jewel Rain Vortex concourse.",
+          memoryTag: "You proved full onward travel compliance.",
+          xp: 95,
+          cash: 400,
+          respect: 25
         },
         {
-          text: "🛍️ May I know where the Duty-Free baggage carousel for SQ 529 is located?",
-          response: "Baggage belt 04 is directly behind the customs clearance exit.",
-          memoryTag: "Officer David guided you to baggage carousel 04.",
-          xp: 65
+          text: "🛍️ Where is the baggage reclaim belt for Singapore Airlines flight SQ 529?",
+          response: "Baggage carousel 04 is directly behind the customs declaration green lane.",
+          memoryTag: "Officer David directed you to carousel 04.",
+          xp: 90,
+          cash: 350,
+          respect: 20
         }
       ]
     },
     {
       id: 'concierge_marcus',
       name: 'Concierge Marcus',
-      role: 'Grand Marina 5-Star Hotel 🤵',
-      location: 'Hotel Grand Lobby',
+      role: 'Grand Marina 5-Star Head Concierge 🤵',
+      gtaTitle: 'THE GRAND MARINA LUXURY HOTEL',
+      location: 'Grand Marina Hotel Lobby',
       avatar: '🤵',
-      greeting: "Welcome to the Grand Marina Hotel, Miss Swathi! It is an absolute privilege to host you. How may I facilitate your stay today?",
+      greeting: "Welcome to The Grand Marina Hotel, Miss Swathi. How may our concierge team assist your stay today?",
       choices: [
         {
-          text: "🏨 Hello Marcus! I have a reservation for the Penthouse Suite #808 with a skyline balcony view.",
-          response: "A magnificent selection! Here is your gold RFID keycard #808. The elevator is to your left.",
-          memoryTag: "Marcus upgraded your suite with complimentary fruit champagne.",
-          xp: 85
+          text: "🗝️ Checking in for the Penthouse Suite #808 reservation under Swathi. May I have the RFID keycard?",
+          response: "An absolute pleasure! Your Penthouse Suite #808 is prepared with complimentary champagne and city skyline views.",
+          memoryTag: "Marcus upgraded your suite with complimentary VIP room service.",
+          xp: 140,
+          cash: 700,
+          respect: 45
         },
         {
-          text: "🍳 Could you arrange an English Breakfast room service delivery for 8:00 AM tomorrow?",
-          response: "Consider it arranged! Fresh scrambled eggs, toasted sourdough, and Earl Grey tea will arrive at 8 sharp.",
-          memoryTag: "Breakfast room service was scheduled.",
-          xp: 70
+          text: "📞 Could I request room service breakfast at 8:00 AM with fresh avocado toast and iced matcha?",
+          response: "Duly noted and scheduled with our executive culinary chef. Dial 0 on your suite's rotary telephone for any requests.",
+          memoryTag: "Marcus scheduled your luxury breakfast order.",
+          xp: 100,
+          cash: 450,
+          respect: 30
         },
         {
-          text: "🧳 May the bellhop bring my check-in luggage up to Suite #808?",
-          response: "Our bellhop team is already transporting your suitcases to your room, Miss Swathi.",
-          memoryTag: "Marcus ensured VIP baggage handling.",
-          xp: 65
+          text: "🚗 Is valet parking available for my sports sedan at the hotel entrance?",
+          response: "Our valet team will securely park and wash your vehicle in the underground garage.",
+          memoryTag: "Marcus arranged private valet parking.",
+          xp: 85,
+          cash: 350,
+          respect: 25
         },
         {
-          text: "🚗 Is valet parking available for my sports car in the private underground garage?",
-          response: "Yes, our 24/7 valet service will park and charge your vehicle securely.",
-          memoryTag: "Your car was parked in the VIP underground bay.",
-          xp: 65
+          text: "🏊 What are the operating hours for the 50th-floor rooftop infinity pool and fitness spa?",
+          response: "The infinity pool and wellness spa are open 24/7 exclusively for Penthouse suite guests.",
+          memoryTag: "You unlocked 24/7 rooftop spa access.",
+          xp: 90,
+          cash: 400,
+          respect: 25
         }
       ]
     }
   ];
 
-  // Physics Refs
+  // Engine Physics & Coordinates
   const keysPressed = useRef<{ [key: string]: boolean }>({});
   const playerState = useRef({
     x: 0,
     y: 0,
-    z: 14,
+    z: 0,
     rotY: 0,
     vy: 0,
     isGrounded: true,
-    speed: 0.22
+    speed: 0.24
   });
 
   const carState = useRef({
@@ -506,10 +633,30 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     z: 10,
     rotY: 0,
     speed: 0,
-    maxSpeed: 0.85,
-    accel: 0.024,
-    friction: 0.96
+    maxSpeed: 0.95,
+    accel: 0.03,
+    friction: 0.965
   });
+
+  // Award GTA Cash and trigger animated HUD popup
+  const awardCash = (amount: number) => {
+    setCashBalance(prev => prev + amount);
+    setCashDelta({ amount, type: '+' });
+    setTimeout(() => setCashDelta(null), 3000);
+  };
+
+  // Trigger GTA 5 Style "MISSION PASSED" Banner
+  const triggerMissionPassed = (title: string, subtitle: string, xp: number, cash: number) => {
+    gtaAudio.playMissionPassed();
+    sound.playSuccess();
+    confetti({ particleCount: 120, spread: 90, origin: { y: 0.6 } });
+    setMissionPassedData({ title, subtitle, xp, cash });
+    awardCash(cash);
+    onAddXp(xp, `GTA Mission Passed: ${title} (+${xp} XP, +$${cash}) 🏆`);
+    setTimeout(() => {
+      setMissionPassedData(null);
+    }, 5500);
+  };
 
   // Three.js 3D Open World Engine Setup
   useEffect(() => {
@@ -526,10 +673,10 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       neon: 0x0f172a
     };
     scene.background = new THREE.Color(skyColors[timeOfDay]);
-    scene.fog = new THREE.FogExp2(skyColors[timeOfDay], timeOfDay === 'day' ? 0.005 : 0.009);
+    scene.fog = new THREE.FogExp2(skyColors[timeOfDay], timeOfDay === 'day' ? 0.004 : 0.008);
 
-    const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
-    camera.position.set(0, 6, 16);
+    const camera = new THREE.PerspectiveCamera(62, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.set(0, 5, 14);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.setSize(container.clientWidth, container.clientHeight);
@@ -537,16 +684,16 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = timeOfDay === 'night' ? 0.85 : timeOfDay === 'sunset' ? 1.1 : 1.35;
+    renderer.toneMappingExposure = timeOfDay === 'night' ? 0.9 : timeOfDay === 'sunset' ? 1.15 : 1.35;
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
     // 2. Realistic Lighting Setup
     const ambientColor = timeOfDay === 'sunset' ? 0xfde047 : timeOfDay === 'night' ? 0x1e293b : 0xfffaed;
-    const ambient = new THREE.AmbientLight(ambientColor, timeOfDay === 'night' ? 0.4 : 1.1);
+    const ambient = new THREE.AmbientLight(ambientColor, timeOfDay === 'night' ? 0.45 : 1.1);
     scene.add(ambient);
 
-    const sun = new THREE.DirectionalLight(timeOfDay === 'sunset' ? 0xf97316 : 0xfff3d6, timeOfDay === 'night' ? 0.2 : 2.2);
+    const sun = new THREE.DirectionalLight(timeOfDay === 'sunset' ? 0xf97316 : 0xfff3d6, timeOfDay === 'night' ? 0.25 : 2.2);
     sun.position.set(timeOfDay === 'sunset' ? 60 : 40, timeOfDay === 'sunset' ? 20 : 70, 40);
     sun.castShadow = true;
     sun.shadow.mapSize.width = 1024;
@@ -559,24 +706,24 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
 
     // Ground Pavement (Polished Granite/Marble)
     const groundMat = new THREE.MeshStandardMaterial({
-      map: createPolishedMarbleTexture(),
+      map: createPolishedGraniteTexture(),
       roughness: 0.25,
       metalness: 0.15
     });
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), groundMat);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(350, 350), groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     worldGroup.add(ground);
 
     // 4-Lane Asphalt Highway
     const roadMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.25 });
-    const road = new THREE.Mesh(new THREE.PlaneGeometry(26, 280), roadMat);
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(26, 320), roadMat);
     road.position.set(18, 0.02, 0);
     road.rotation.x = -Math.PI / 2;
     worldGroup.add(road);
 
-    // Road Yellow Dashed Lines
-    for (let y = -130; y <= 130; y += 12) {
+    // Road Yellow Double Lines
+    for (let y = -150; y <= 150; y += 12) {
       const line = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 6), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
       line.position.set(18, 0.03, y);
       line.rotation.x = -Math.PI / 2;
@@ -584,7 +731,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     }
 
     // Streetlamps with glowing lanterns & pointlights
-    for (let z = -100; z <= 100; z += 35) {
+    for (let z = -120; z <= 120; z += 35) {
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 7, 8), new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8 }));
       pole.position.set(32, 3.5, z);
       worldGroup.add(pole);
@@ -598,19 +745,19 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       worldGroup.add(sl);
     }
 
-    // --- GTA-STYLE GLOWING IN-WORLD INTERACTION BEACONS ---
-    // 🟢 Green Beacon (Starbucks)
+    // --- GTA-STYLE GLOWING IN-WORLD MISSION BEACONS ---
+    // 🟢 Green Beacon (Starbucks / Bean Machine)
     const sbBeacon = new THREE.Mesh(
       new THREE.CylinderGeometry(3.5, 3.5, 0.15, 32),
-      new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.55 })
+      new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.6 })
     );
     sbBeacon.position.set(0, 0.08, -20);
     worldGroup.add(sbBeacon);
 
-    // 🟡 Yellow Beacon (Airport Security)
+    // 🟡 Yellow Beacon (Airport Security Checkpoint)
     const secBeacon = new THREE.Mesh(
       new THREE.CylinderGeometry(3.5, 3.5, 0.15, 32),
-      new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.55 })
+      new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.6 })
     );
     secBeacon.position.set(-68, 0.08, -10);
     worldGroup.add(secBeacon);
@@ -618,7 +765,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     // 🔵 Blue Beacon (Immigration Desk)
     const immBeacon = new THREE.Mesh(
       new THREE.CylinderGeometry(3.5, 3.5, 0.15, 32),
-      new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.55 })
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.6 })
     );
     immBeacon.position.set(-50, 0.08, -18);
     worldGroup.add(immBeacon);
@@ -626,12 +773,12 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     // 🔴 Red Beacon (Hotel Lobby)
     const hotelBeacon = new THREE.Mesh(
       new THREE.CylinderGeometry(3.5, 3.5, 0.15, 32),
-      new THREE.MeshBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.55 })
+      new THREE.MeshBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.6 })
     );
     hotelBeacon.position.set(0, 0.08, 38);
     worldGroup.add(hotelBeacon);
 
-    // --- REALISTIC STARBUCKS RESERVE CAFE (North) ---
+    // --- BEAN MACHINE / STARBUCKS RESERVE CAFE (North) ---
     const sbGroup = new THREE.Group();
     sbGroup.position.set(0, 0, -25);
 
@@ -649,7 +796,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     sbCounter.castShadow = true;
     sbGroup.add(sbCounter);
 
-    // 📺 3 GIANT HIGH-DEF OVERHEAD DIGITAL MENU TV SCREENS!
+    // 📺 3 Overhead Digital 4K TV Menus
     const screenCategories: ('espresso' | 'hot_choc' | 'paninis')[] = ['espresso', 'hot_choc', 'paninis'];
     screenCategories.forEach((cat, idx) => {
       const xPos = (idx - 1) * 7.5;
@@ -675,7 +822,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
 
     worldGroup.add(sbGroup);
 
-    // --- SINGAPORE CHANGI JEWEL & AIRPORT WING (West) ---
+    // --- SINGAPORE CHANGI JEWEL & LSIA AIRPORT WING (West) ---
     const airportGroup = new THREE.Group();
     airportGroup.position.set(-50, 0, 0);
 
@@ -684,7 +831,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     aFloor.position.y = 0.06;
     airportGroup.add(aFloor);
 
-    // 🌊 40m JEWEL CHANGI RAIN VORTEX WATERFALL DOME
+    // 🌊 40m Jewel Changi Rain Vortex Waterfall Dome
     const domeGeom = new THREE.CylinderGeometry(14, 16, 22, 24, 1, true);
     const domeMat = new THREE.MeshPhysicalMaterial({
       color: 0x38bdf8,
@@ -727,17 +874,17 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     fidsTv.position.set(0, 10, -22);
     airportGroup.add(fidsTv);
 
-    // 👮‍♂️ 3D PERSON 2: SECURITY OFFICER VIKRAM
+    // 👮‍♂️ 3D PERSON 2: OFFICER VIKRAM
     const officerVikramModel = createHumanoidModel(0xd97706);
     officerVikramModel.position.set(-18, 0, -10);
     airportGroup.add(officerVikramModel);
 
-    // 🛂 3D PERSON 3: IMMIGRATION OFFICER DAVID
+    // 🛂 3D PERSON 3: OFFICER DAVID
     const officerDavidModel = createHumanoidModel(0x1e1b4b);
     officerDavidModel.position.set(0, 0, -18);
     airportGroup.add(officerDavidModel);
 
-    // ✈️ 3D REAL BOEING 787 DREAMLINER AIRPLANE
+    // ✈️ 3D REAL BOEING 787 DREAMLINER JET
     const planeGroup = new THREE.Group();
     const planeBody = new THREE.Mesh(
       new THREE.CylinderGeometry(3.5, 3.5, 32, 24),
@@ -777,11 +924,12 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
 
     worldGroup.add(hotelGroup);
 
-    // --- 3D DRIVABLE SPORTS SEDAN & LUXURY SUV ---
+    // --- 3D DRIVABLE GTA VEHICLES ---
     const carGroup = new THREE.Group();
+    const carColor = activeVehicle === 'luxury_suv' ? 0x0f172a : activeVehicle === 'police_cruiser' ? 0x0284c7 : 0xef4444;
     const carBody = new THREE.Mesh(
       new THREE.BoxGeometry(2.5, activeVehicle === 'luxury_suv' ? 1.3 : 0.95, 5.0),
-      new THREE.MeshStandardMaterial({ color: activeVehicle === 'luxury_suv' ? 0x0f172a : 0xef4444, metalness: 0.85, roughness: 0.15 })
+      new THREE.MeshStandardMaterial({ color: carColor, metalness: 0.85, roughness: 0.15 })
     );
     carBody.position.y = activeVehicle === 'luxury_suv' ? 0.9 : 0.7;
     carBody.castShadow = true;
@@ -794,10 +942,23 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     carGlass.position.set(0, activeVehicle === 'luxury_suv' ? 1.8 : 1.5, -0.3);
     carGroup.add(carGlass);
 
+    // Headlights Cones
+    const headlampLeft = new THREE.SpotLight(0xffffff, 2.5, 40, Math.PI / 6, 0.4);
+    headlampLeft.position.set(-0.8, 0.8, 2.4);
+    headlampLeft.target.position.set(-0.8, 0, 15);
+    carGroup.add(headlampLeft);
+    carGroup.add(headlampLeft.target);
+
+    const headlampRight = new THREE.SpotLight(0xffffff, 2.5, 40, Math.PI / 6, 0.4);
+    headlampRight.position.set(0.8, 0.8, 2.4);
+    headlampRight.target.position.set(0.8, 0, 15);
+    carGroup.add(headlampRight);
+    carGroup.add(headlampRight.target);
+
     // Wheels
     const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
-    for (let wx of [-1.3, 1.3]) {
-      for (let wz of [-1.6, 1.6]) {
+    for (const wx of [-1.3, 1.3]) {
+      for (const wz of [-1.6, 1.6]) {
         const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.35, 16), wheelMat);
         wheel.rotation.z = Math.PI / 2;
         wheel.position.set(wx, 0.42, wz);
@@ -809,7 +970,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     scene.add(carGroup);
 
     // --- 3D PLAYABLE CHARACTER (Swathi) ---
-    const playerGroup = createHumanoidModel(0xec4899); // Swathi's Rose Pink Blazer
+    const playerGroup = createHumanoidModel(0xec4899); // Rose Pink Blazer
     playerGroup.position.set(playerState.current.x, playerState.current.y, playerState.current.z);
     scene.add(playerGroup);
 
@@ -818,9 +979,14 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       keysPressed.current[e.code] = true;
       if (e.code === 'KeyF') {
         const dist = Math.hypot(playerState.current.x - carState.current.x, playerState.current.z - carState.current.z);
-        if (dist < 6 || isDriving) {
+        if (dist < 8 || isDriving) {
           sound.playClick();
-          setIsDriving(prev => !prev);
+          setIsDriving(prev => {
+            const next = !prev;
+            if (next) gtaAudio.startEngineSound();
+            else gtaAudio.stopEngineSound();
+            return next;
+          });
         }
       }
       if (e.code === 'KeyE' && nearbyNpc) {
@@ -828,12 +994,30 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
         setActiveTelltaleDialogue(nearbyNpc);
         setSelectedChoice(null);
       }
+      if (e.code === 'KeyH' && isDriving) {
+        gtaAudio.playHorn();
+      }
+      if (e.code === 'KeyP') {
+        sound.playClick();
+        setShowIFruitPhone(prev => !prev);
+      }
+      if (e.code === 'Tab') {
+        e.preventDefault();
+        setShowWeaponWheel(prev => !prev);
+      }
+      if (e.code === 'KeyR' && isDriving) {
+        sound.playClick();
+        setCurrentRadioIndex(prev => (prev + 1) % radioStations.length);
+        setShowRadioHUD(true);
+        setTimeout(() => setShowRadioHUD(false), 2500);
+      }
       if (e.code === 'Space' && playerState.current.isGrounded && !isDriving) {
         playerState.current.vy = 0.26;
         playerState.current.isGrounded = false;
         sound.playClick();
       }
     };
+
     const handleKeyUp = (e: KeyboardEvent) => {
       keysPressed.current[e.code] = false;
     };
@@ -849,7 +1033,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
       tick++;
 
       // Pulse beacon opacity like GTA
-      const beaconGlow = 0.4 + Math.sin(tick * 0.08) * 0.25;
+      const beaconGlow = 0.45 + Math.sin(tick * 0.08) * 0.25;
       sbBeacon.material.opacity = beaconGlow;
       secBeacon.material.opacity = beaconGlow;
       immBeacon.material.opacity = beaconGlow;
@@ -913,7 +1097,9 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
 
         playerState.current.x = carState.current.x;
         playerState.current.z = carState.current.z;
-        setCarSpeedKmH(Math.round(Math.abs(carState.current.speed) * 160));
+        const currentKmH = Math.round(Math.abs(carState.current.speed) * 160);
+        setCarSpeedKmH(currentKmH);
+        gtaAudio.updateEnginePitch(Math.abs(carState.current.speed) / carState.current.maxSpeed);
 
         const cx = carState.current.x;
         const cz = carState.current.z;
@@ -926,7 +1112,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
 
       } else {
         playerGroup.visible = true;
-        const speed = playerState.current.speed;
+        const speed = playerState.current.speed * (keysPressed.current['ShiftLeft'] || keysPressed.current['ShiftRight'] ? 1.75 : 1);
         let moveX = 0;
         let moveZ = 0;
 
@@ -972,9 +1158,9 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
         const tz = playerState.current.z;
 
         camera.position.set(
-          tx + Math.sin(cameraAngleYaw.current) * 9,
-          ty + 4.5,
-          tz + Math.cos(cameraAngleYaw.current) * 9
+          tx + Math.sin(cameraAngleYaw.current) * 8.5,
+          ty + 4.2,
+          tz + Math.cos(cameraAngleYaw.current) * 8.5
         );
         camera.lookAt(tx, ty, tz);
       }
@@ -995,6 +1181,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
 
     return () => {
       cancelAnimationFrame(animId);
+      gtaAudio.stopEngineSound();
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('resize', handleResize);
@@ -1002,7 +1189,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     };
   }, [isDriving, timeOfDay, activeVehicle]);
 
-  // Universal HTML5 Pointer-Captured Joystick Handlers (Desktop Mouse & Touch)
+  // Pointer-Captured Touch Joysticks
   const handleLeftPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     leftStickActive.current = true;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -1046,7 +1233,7 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
     const rect = e.currentTarget.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const dx = e.clientX - centerX;
-    cameraAngleYaw.current -= dx * 0.0035;
+    cameraAngleYaw.current -= dx * 0.004;
     setRightStickPos({ x: Math.max(-28, Math.min(28, dx * 0.6)), y: 0 });
   };
 
@@ -1059,8 +1246,27 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Telltale Memory Notification Bar (Like "Hana will remember that...") */}
+    <div className="space-y-4 max-w-7xl mx-auto select-none font-sans">
+      {/* 🏆 GTA 5 "MISSION PASSED" VINTAGE BANNER SCREEN */}
+      {missionPassedData && (
+        <div className="fixed inset-0 z-[100] bg-black/80 flex flex-col items-center justify-center p-6 animate-fadeIn text-center pointer-events-none">
+          <div className="w-full max-w-3xl py-6 bg-black/90 border-y-4 border-amber-400 shadow-2xl space-y-2 transform -skew-x-6">
+            <h1 className="text-4xl sm:text-6xl font-black tracking-widest text-amber-400 drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)] uppercase font-mono">
+              MISSION PASSED
+            </h1>
+            <p className="text-xl sm:text-2xl font-black text-white uppercase tracking-wider font-mono">
+              {missionPassedData.title}
+            </p>
+            <div className="flex items-center justify-center gap-6 pt-2 font-mono text-sm sm:text-base font-bold">
+              <span className="text-emerald-400">RESPECT +</span>
+              <span className="text-amber-300">+{missionPassedData.xp} XP</span>
+              <span className="text-green-400 font-black">+${missionPassedData.cash.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 💭 Telltale Notification ("Hana will remember that...") */}
       {telltaleNotification && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 border-2 border-amber-400 text-amber-200 px-6 py-3 rounded-2xl shadow-2xl font-mono text-xs sm:text-sm font-bold flex items-center gap-2 animate-bounce">
           <Sparkles className="w-4 h-4 text-amber-400 animate-spin" />
@@ -1068,362 +1274,503 @@ export const UltimateRealOpenWorldEngine: React.FC<UltimateRealOpenWorldEnginePr
         </div>
       )}
 
-      {/* Top Banner with Real-Time Sky, Smartphone Launcher & Sector Teleporters */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 rounded-3xl border-2 border-indigo-500/40 shadow-2xl relative overflow-hidden">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-xs font-bold uppercase tracking-wider border border-indigo-500/30">
-              <Sparkles className="w-3.5 h-3.5 animate-spin text-amber-400" />
-              GTA 5 + Telltale Style 3D Real Life Simulator Engine
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1 flex items-center gap-3">
-              🎮 GTA-Style Open World & Telltale Story Choices
-            </h2>
-            <p className="text-indigo-200/80 text-xs sm:text-sm max-w-2xl mt-0.5">
-              100% Free Roam! Walk into glowing GTA beacons, interact directly with 3D people, pick your dialogue branches, drive sports cars, and fly through airport gates!
-            </p>
-          </div>
-
-          {/* Quick Teleporters & Settings */}
-          <div className="flex flex-wrap items-center gap-2 bg-slate-950/90 p-2 rounded-2xl border border-slate-800">
-            <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-700">
-              <button
-                onClick={() => setTimeOfDay('day')}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 ${timeOfDay === 'day' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
-                title="Sunny Midday"
-              >
-                <Sun className="w-3.5 h-3.5" /> Day
-              </button>
-              <button
-                onClick={() => setTimeOfDay('sunset')}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 ${timeOfDay === 'sunset' ? 'bg-orange-500 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-                title="Golden Sunset"
-              >
-                <Sunset className="w-3.5 h-3.5" /> Sunset
-              </button>
-              <button
-                onClick={() => setTimeOfDay('night')}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 ${timeOfDay === 'night' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-                title="Midnight City Lights"
-              >
-                <Moon className="w-3.5 h-3.5" /> Night
-              </button>
-            </div>
-
-            <button
-              onClick={() => {
-                sound.playClick();
-                playerState.current.x = 0;
-                playerState.current.z = -20;
-                setIsDriving(false);
-                setCurrentLocationName('Starbucks Reserve Counter');
-              }}
-              className="px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer"
-            >
-              🟢 Starbucks Beacon
-            </button>
-            <button
-              onClick={() => {
-                sound.playClick();
-                playerState.current.x = -68;
-                playerState.current.z = -10;
-                setIsDriving(false);
-                setCurrentLocationName('Airport Security Checkpoint');
-              }}
-              className="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer"
-            >
-              🟡 Security Beacon
-            </button>
-            <button
-              onClick={() => {
-                sound.playClick();
-                playerState.current.x = -50;
-                playerState.current.z = -18;
-                setIsDriving(false);
-                setCurrentLocationName('Passport Immigration Desk');
-              }}
-              className="px-3 py-2 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer"
-            >
-              🔵 Immigration Beacon
-            </button>
-            <button
-              onClick={() => {
-                sound.playClick();
-                playerState.current.x = 0;
-                playerState.current.z = 38;
-                setIsDriving(false);
-                setCurrentLocationName('Grand Marina Hotel Lobby');
-              }}
-              className="px-3 py-2 bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer"
-            >
-              🔴 Hotel Beacon
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 3D Viewport with Dual Joysticks & GTA Interaction Trigger */}
-      <div className="relative rounded-3xl overflow-hidden border-2 border-indigo-500/40 bg-slate-950 shadow-2xl">
-        <div ref={mountRef} className="w-full h-[560px] cursor-grab active:cursor-grabbing bg-slate-950" />
-
-        {/* Top-Left Avatar & Speedometer HUD */}
-        <div className="absolute top-4 left-4 bg-slate-950/90 backdrop-blur-md p-3.5 rounded-2xl border border-indigo-500/30 shadow-xl flex items-center gap-3 pointer-events-none">
-          <div className="w-11 h-11 rounded-full bg-pink-500/20 text-pink-400 border border-pink-500/40 flex items-center justify-center text-xl font-black">
-            {isDriving ? (activeVehicle === 'luxury_suv' ? '🚙' : '🏎️') : '👑'}
+      {/* 🎮 GTA 5 TOP CONTROLS & ENVIRONMENT HEADER */}
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-4 rounded-3xl border-2 border-amber-500/40 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-2xl font-black font-mono">
+            ★V
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black text-white">{playerName}</span>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isDriving ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
-                {isDriving ? `DRIVING: ${carSpeedKmH} KM/H` : 'WALKING'}
+              <span className="text-base font-black text-white tracking-wider uppercase font-mono">GRAND THEFT AUTO: LOS SANTOS</span>
+              <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full text-[10px] font-black">
+                SWATHI'S SIMULATOR
               </span>
             </div>
-            <p className="text-[11px] text-indigo-200 font-medium">
-              {isDriving ? 'Highway Cruising (Speed Limit 45 mph)' : currentLocationName}
+            <p className="text-xs text-slate-400">
+              Cross-Platform Life Engine (PC Keyboard/Mouse • Tablet • Android Touch HUD)
             </p>
           </div>
         </div>
 
-        {/* 💬 GTA-STYLE INTERACTION BUTTON PROMPT (Appears when near beacon or person) */}
+        {/* Time of Day & Fast Teleporters */}
+        <div className="flex flex-wrap items-center gap-2 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800">
+          <button
+            onClick={() => setTimeOfDay('day')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer ${timeOfDay === 'day' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
+          >
+            <Sun className="w-3.5 h-3.5" /> Day
+          </button>
+          <button
+            onClick={() => setTimeOfDay('sunset')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer ${timeOfDay === 'sunset' ? 'bg-orange-500 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+          >
+            <Sunset className="w-3.5 h-3.5" /> Sunset
+          </button>
+          <button
+            onClick={() => setTimeOfDay('night')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer ${timeOfDay === 'night' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+          >
+            <Moon className="w-3.5 h-3.5" /> Night
+          </button>
+          <button
+            onClick={() => {
+              sound.playClick();
+              setShowIFruitPhone(true);
+            }}
+            className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow cursor-pointer"
+          >
+            <Smartphone className="w-3.5 h-3.5" /> iFruit Phone [P]
+          </button>
+        </div>
+      </div>
+
+      {/* 🏙️ MAIN 3D GTA VIEWPORT & AUTHENTIC GTA 5 HUD OVERLAY */}
+      <div className="relative rounded-3xl overflow-hidden border-4 border-slate-800 bg-black shadow-2xl">
+        <div ref={mountRef} className="w-full h-[580px] bg-slate-950 cursor-grab active:cursor-grabbing" />
+
+        {/* 🌟 TOP-RIGHT GTA 5 HUD (MONEY, WANTED STARS, AMMO/ITEM) */}
+        <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-1.5 pointer-events-none font-mono select-none">
+          {/* Wanted Stars (★ ★ ★ ★ ★) */}
+          <div className="flex items-center gap-1 text-base">
+            {[1, 2, 3, 4, 5].map(starNum => (
+              <Star
+                key={starNum}
+                className={`w-5 h-5 ${starNum <= wantedStars ? 'text-amber-400 fill-amber-400 animate-pulse' : 'text-slate-700'}`}
+              />
+            ))}
+          </div>
+
+          {/* GTA 5 Cash Display with Green Font */}
+          <div className="flex items-baseline gap-1 text-2xl sm:text-3xl font-black text-emerald-400 drop-shadow-[0_3px_3px_rgba(0,0,0,0.9)] tracking-tight">
+            <span className="text-emerald-500">$</span>
+            <span>{cashBalance.toLocaleString()}</span>
+          </div>
+
+          {/* Floating Cash Delta */}
+          {cashDelta && (
+            <div className={`text-sm sm:text-base font-black animate-bounce ${cashDelta.type === '+' ? 'text-green-400' : 'text-red-400'}`}>
+              {cashDelta.type}${cashDelta.amount.toLocaleString()}
+            </div>
+          )}
+
+          {/* Active Weapon / Item Indicator */}
+          <div className="bg-black/80 backdrop-blur-md px-3 py-1 rounded-xl border border-slate-700 text-xs font-bold text-amber-300 flex items-center gap-1.5">
+            <span>{activeWeaponItem === 'coffee' ? '☕ Caramel Macchiato' : activeWeaponItem === 'card' ? '💳 Apple Pay / Card' : activeWeaponItem === 'boarding_pass' ? '🎫 SQ 529 Pass' : activeWeaponItem === 'keycard' ? '🗝️ Suite #808 Key' : activeWeaponItem === 'phone' ? '📱 iFruit 9S' : '👊 Unarmed'}</span>
+          </div>
+        </div>
+
+        {/* 📻 GTA 5 RADIO STATION POPUP HUD */}
+        {showRadioHUD && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-black/90 border-2 border-amber-400 px-6 py-2 rounded-2xl shadow-2xl flex items-center gap-3 animate-fadeIn">
+            <span className="text-2xl">{radioStations[currentRadioIndex].icon}</span>
+            <div>
+              <span className="text-[10px] text-amber-400 uppercase font-mono font-bold block">LOS SANTOS RADIO</span>
+              <span className="text-sm font-black text-white">{radioStations[currentRadioIndex].name}</span>
+            </div>
+          </div>
+        )}
+
+        {/* 🗺️ BOTTOM-LEFT AUTHENTIC GTA 5 RADAR MINI-MAP & HEALTH/ARMOR BARS */}
+        <div className="absolute bottom-6 left-6 z-20 flex flex-col items-start gap-1 select-none">
+          <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-2xl bg-black/85 border-2 border-slate-600 backdrop-blur-md relative overflow-hidden shadow-2xl p-2 flex flex-col justify-between">
+            {/* Compass & North Pointer */}
+            <div className="flex items-center justify-between text-[10px] font-mono font-black text-slate-400">
+              <span className="text-amber-400">LSIA/VINEWOOD</span>
+              <span className="text-sky-400">N ▲</span>
+            </div>
+
+            {/* Radar Grid Center & GPS Pointer */}
+            <div className="relative flex-1 flex items-center justify-center">
+              <div className="w-full h-[1px] bg-slate-800 absolute" />
+              <div className="h-full w-[1px] bg-slate-800 absolute" />
+              <div className="w-16 h-16 rounded-full border border-slate-700/60 absolute" />
+              
+              {/* Mission Blips on Radar */}
+              <div className="absolute w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping top-3 left-4" title="Starbucks" />
+              <div className="absolute w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping top-4 right-3" title="Airport Security" />
+              <div className="absolute w-2.5 h-2.5 rounded-full bg-sky-400 animate-ping bottom-4 left-3" title="Immigration" />
+              <div className="absolute w-2.5 h-2.5 rounded-full bg-rose-400 animate-ping bottom-3 right-4" title="Hotel Lobby" />
+
+              {/* Player Arrow */}
+              <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[12px] border-b-cyan-400 shadow-lg transform rotate-0" />
+            </div>
+
+            {/* Location Tag */}
+            <div className="text-[9px] font-black text-slate-300 truncate font-mono">
+              {isDriving ? `CRUISING • ${carSpeedKmH} KM/H` : currentLocationName}
+            </div>
+          </div>
+
+          {/* GTA 5 Health (Green), Armor (Blue), and Special Ability (Yellow) Bars */}
+          <div className="w-36 sm:w-44 flex flex-col gap-1 bg-black/90 p-1.5 rounded-xl border border-slate-800">
+            {/* Health Bar (Green) */}
+            <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
+              <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${healthPercent}%` }} />
+            </div>
+            <div className="flex gap-1">
+              {/* Armor Bar (Blue) */}
+              <div className="flex-1 h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
+                <div className="h-full bg-sky-500 rounded-full" style={{ width: `${armorPercent}%` }} />
+              </div>
+              {/* Special Ability Bar (Yellow) */}
+              <div className="flex-1 h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
+                <div className="h-full bg-amber-400 rounded-full" style={{ width: `${specialAbilityPercent}%` }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 💬 GTA-STYLE TALK / INTERACTION PROMPT */}
         {nearbyNpc && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 animate-bounce">
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 animate-bounce">
             <button
               onClick={() => {
                 sound.playClick();
                 setActiveTelltaleDialogue(nearbyNpc);
                 setSelectedChoice(null);
               }}
-              className="px-6 py-3.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-sky-400 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-2xl border-2 border-white flex items-center gap-2 cursor-pointer hover:scale-105 transition-all"
+              className="px-6 py-3.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-2xl border-2 border-white flex items-center gap-2 cursor-pointer font-mono"
             >
               <MessageSquare className="w-5 h-5 text-slate-950" />
-              <span>{nearbyNpc.avatar} Talk to {nearbyNpc.name} ({nearbyNpc.role}) [Press E or Tap]</span>
+              <span>{nearbyNpc.avatar} TALK TO {nearbyNpc.name.toUpperCase()} [PRESS E / TAP]</span>
             </button>
           </div>
         )}
 
-        {/* --- DUAL ON-SCREEN VIRTUAL JOYSTICKS (WORKS WITH BOTH MOUSE & MULTI-TOUCH) --- */}
-        {/* Left Joystick: Movement */}
+        {/* 📱 GTA TOUCH CONTROLLER CLUSTER (FOR ANDROID TABLET & LAPTOP) */}
+        {/* Left Analog Movement Stick */}
         <div
           onPointerDown={handleLeftPointerDown}
           onPointerMove={handleLeftPointerMove}
           onPointerUp={handleLeftPointerUp}
           onPointerCancel={handleLeftPointerUp}
-          className="absolute bottom-6 left-6 w-36 h-36 rounded-full bg-slate-950/85 border-2 border-emerald-500/70 backdrop-blur-md flex items-center justify-center select-none z-30 shadow-2xl cursor-grab active:cursor-grabbing touch-none ring-4 ring-emerald-500/20"
+          className="absolute bottom-6 left-44 sm:left-52 w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-black/80 border-2 border-emerald-500/70 backdrop-blur-md flex items-center justify-center select-none z-30 shadow-2xl cursor-grab active:cursor-grabbing touch-none ring-4 ring-emerald-500/20"
         >
-          <div className="absolute text-[10px] font-black text-emerald-400 uppercase tracking-widest top-2 pointer-events-none">
-            Move Joystick
+          <div className="absolute text-[9px] font-black text-emerald-400 uppercase font-mono top-1 pointer-events-none">
+            ANALOG
           </div>
-          <div className="absolute top-1 text-emerald-500/40 text-[9px] font-mono pointer-events-none">▲</div>
-          <div className="absolute bottom-1 text-emerald-500/40 text-[9px] font-mono pointer-events-none">▼</div>
-          <div className="absolute left-1 text-emerald-500/40 text-[9px] font-mono pointer-events-none">◀</div>
-          <div className="absolute right-1 text-emerald-500/40 text-[9px] font-mono pointer-events-none">▶</div>
-
           <div
-            className="w-16 h-16 rounded-full bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 border-2 border-white shadow-2xl pointer-events-none transition-transform duration-75 flex items-center justify-center text-slate-950 font-black text-lg shadow-emerald-500/50"
+            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 border-2 border-white shadow-2xl pointer-events-none flex items-center justify-center text-slate-950 font-black text-base shadow-emerald-500/50"
             style={{ transform: `translate(${leftStickPos.x}px, ${leftStickPos.y}px)` }}
           >
             🕹️
           </div>
         </div>
 
-        {/* Right Joystick: 360° Camera Look */}
+        {/* Right 360° Camera Look Stick */}
         <div
           onPointerDown={handleRightPointerDown}
           onPointerMove={handleRightPointerMove}
           onPointerUp={handleRightPointerUp}
           onPointerCancel={handleRightPointerUp}
-          className="absolute bottom-6 right-6 w-36 h-36 rounded-full bg-slate-950/85 border-2 border-sky-500/70 backdrop-blur-md flex items-center justify-center select-none z-30 shadow-2xl cursor-grab active:cursor-grabbing touch-none ring-4 ring-sky-500/20"
+          className="absolute bottom-6 right-36 sm:right-40 w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-black/80 border-2 border-sky-500/70 backdrop-blur-md flex items-center justify-center select-none z-30 shadow-2xl cursor-grab active:cursor-grabbing touch-none ring-4 ring-sky-500/20"
         >
-          <div className="absolute text-[10px] font-black text-sky-400 uppercase tracking-widest top-2 pointer-events-none">
-            Camera 360°
+          <div className="absolute text-[9px] font-black text-sky-400 uppercase font-mono top-1 pointer-events-none">
+            LOOK 360°
           </div>
-          <div className="absolute left-1 text-sky-500/40 text-[9px] font-mono pointer-events-none">◀</div>
-          <div className="absolute right-1 text-sky-500/40 text-[9px] font-mono pointer-events-none">▶</div>
-
           <div
-            className="w-16 h-16 rounded-full bg-gradient-to-r from-sky-400 via-indigo-400 to-sky-500 border-2 border-white shadow-2xl pointer-events-none transition-transform duration-75 flex items-center justify-center text-white font-black text-lg shadow-sky-500/50"
+            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-sky-400 via-indigo-400 to-sky-500 border-2 border-white shadow-2xl pointer-events-none flex items-center justify-center text-white font-black text-base shadow-sky-500/50"
             style={{ transform: `translate(${rightStickPos.x}px, ${rightStickPos.y}px)` }}
           >
             🔄
           </div>
         </div>
 
-        {/* Center Control HUD (Driving D-Pad & Quick Action Buttons) */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-30">
-          {isDriving ? (
-            <div className="flex items-center gap-2 bg-slate-950/90 backdrop-blur-md p-2 rounded-2xl border border-amber-500/50 shadow-2xl">
-              <button
-                onPointerDown={() => { keysPressed.current['KeyW'] = true; }}
-                onPointerUp={() => { keysPressed.current['KeyW'] = false; }}
-                onPointerCancel={() => { keysPressed.current['KeyW'] = false; }}
-                className="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs flex items-center gap-1 shadow cursor-pointer active:scale-95"
-              >
-                <ArrowUp className="w-4 h-4" /> GAS
-              </button>
-              <button
-                onPointerDown={() => { keysPressed.current['KeyS'] = true; }}
-                onPointerUp={() => { keysPressed.current['KeyS'] = false; }}
-                onPointerCancel={() => { keysPressed.current['KeyS'] = false; }}
-                className="px-3.5 py-2.5 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl text-xs flex items-center gap-1 shadow cursor-pointer active:scale-95"
-              >
-                <ArrowDown className="w-4 h-4" /> BRAKE
-              </button>
-              <button
-                onPointerDown={() => { keysPressed.current['KeyA'] = true; }}
-                onPointerUp={() => { keysPressed.current['KeyA'] = false; }}
-                onPointerCancel={() => { keysPressed.current['KeyA'] = false; }}
-                className="p-2.5 bg-slate-800 hover:bg-slate-700 text-white font-black rounded-xl text-xs shadow cursor-pointer active:scale-95"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-              <button
-                onPointerDown={() => { keysPressed.current['KeyD'] = true; }}
-                onPointerUp={() => { keysPressed.current['KeyD'] = false; }}
-                onPointerCancel={() => { keysPressed.current['KeyD'] = false; }}
-                className="p-2.5 bg-slate-800 hover:bg-slate-700 text-white font-black rounded-xl text-xs shadow cursor-pointer active:scale-95"
-              >
-                <ArrowRight className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => {
+        {/* Right PlayStation / Xbox Style GTA Action Cluster (△ ✕ ◻ ◯) */}
+        <div className="absolute bottom-6 right-4 z-30 flex flex-col items-center gap-1.5">
+          {/* Triangle: Enter/Exit Vehicle */}
+          <button
+            onClick={() => {
+              const dist = Math.hypot(playerState.current.x - carState.current.x, playerState.current.z - carState.current.z);
+              if (dist < 12 || isDriving) {
+                sound.playClick();
+                setIsDriving(prev => {
+                  const next = !prev;
+                  if (next) gtaAudio.startEngineSound();
+                  else gtaAudio.stopEngineSound();
+                  return next;
+                });
+              } else {
+                playerState.current.x = carState.current.x;
+                playerState.current.z = carState.current.z;
+                setIsDriving(true);
+                gtaAudio.startEngineSound();
+              }
+            }}
+            className="w-12 h-12 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-base border-2 border-white shadow-2xl flex items-center justify-center cursor-pointer active:scale-95"
+            title="Enter / Exit Vehicle [F]"
+          >
+            △
+          </button>
+          <div className="flex items-center gap-1.5">
+            {/* Square: Jump / Brake */}
+            <button
+              onClick={() => {
+                if (!isDriving && playerState.current.isGrounded) {
+                  playerState.current.vy = 0.26;
+                  playerState.current.isGrounded = false;
                   sound.playClick();
-                  confetti({ particleCount: 40, spread: 60 });
-                }}
-                className="px-3 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1 shadow cursor-pointer active:scale-95"
-              >
-                📢 HORN
-              </button>
-              <button
-                onClick={() => {
-                  sound.playClick();
-                  setActiveVehicle(prev => prev === 'sports_sedan' ? 'luxury_suv' : 'sports_sedan');
-                }}
-                className="px-3 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-xl text-xs shadow cursor-pointer active:scale-95"
-              >
-                🔄 {activeVehicle === 'sports_sedan' ? 'SUV' : 'Sedan'}
-              </button>
-              <button
-                onClick={() => {
-                  sound.playClick();
-                  setIsDriving(false);
-                }}
-                className="px-3 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl text-xs flex items-center gap-1 shadow cursor-pointer active:scale-95"
-              >
-                <Car className="w-4 h-4" /> EXIT
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  if (playerState.current.isGrounded) {
-                    playerState.current.vy = 0.26;
-                    playerState.current.isGrounded = false;
-                    sound.playClick();
-                  }
-                }}
-                className="px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl shadow-2xl text-xs flex items-center gap-1.5 border border-indigo-400/50 cursor-pointer active:scale-95"
-              >
-                🦘 Jump [Space]
-              </button>
-              <button
-                onClick={() => {
-                  const dist = Math.hypot(playerState.current.x - carState.current.x, playerState.current.z - carState.current.z);
-                  if (dist < 10) {
-                    sound.playClick();
-                    setIsDriving(true);
-                  } else {
-                    sound.playClick();
-                    playerState.current.x = carState.current.x;
-                    playerState.current.z = carState.current.z;
-                    setIsDriving(true);
-                  }
-                }}
-                className="px-4 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-2xl shadow-2xl text-xs flex items-center gap-1.5 border border-white cursor-pointer active:scale-95"
-              >
-                🚗 Drive Car [F]
-              </button>
-            </div>
-          )}
+                }
+              }}
+              className="w-12 h-12 rounded-full bg-pink-500 hover:bg-pink-400 text-white font-black text-base border-2 border-white shadow-2xl flex items-center justify-center cursor-pointer active:scale-95"
+              title="Jump [Space]"
+            >
+              ◻
+            </button>
+            {/* Circle: Horn / Action */}
+            <button
+              onClick={() => {
+                if (isDriving) gtaAudio.playHorn();
+                else sound.playClick();
+              }}
+              className="w-12 h-12 rounded-full bg-red-500 hover:bg-red-400 text-white font-black text-base border-2 border-white shadow-2xl flex items-center justify-center cursor-pointer active:scale-95"
+              title="Horn / Action [H]"
+            >
+              ◯
+            </button>
+          </div>
+          {/* Cross: Sprint / Accelerate */}
+          <button
+            onPointerDown={() => { keysPressed.current['ShiftLeft'] = true; }}
+            onPointerUp={() => { keysPressed.current['ShiftLeft'] = false; }}
+            className="w-12 h-12 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white font-black text-base border-2 border-white shadow-2xl flex items-center justify-center cursor-pointer active:scale-95"
+            title="Sprint [Shift]"
+          >
+            ✕
+          </button>
         </div>
       </div>
 
-      {/* 🎬 TELLTALE / WALKING DEAD STYLE INTERACTIVE CINEMATIC DIALOGUE HUD */}
-      {activeTelltaleDialogue && (
-        <div className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
-          <div className="bg-slate-900 border-2 border-amber-500/60 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl space-y-6 my-8">
-            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-3xl font-black">
-                  {activeTelltaleDialogue.avatar}
-                </div>
-                <div>
-                  <span className="text-xs font-black uppercase tracking-wider text-amber-400">{activeTelltaleDialogue.location}</span>
-                  <h3 className="text-2xl font-black text-white">{activeTelltaleDialogue.name}</h3>
-                  <p className="text-xs text-slate-400">{activeTelltaleDialogue.role}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setActiveTelltaleDialogue(null)}
-                className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold"
-              >
-                ✕ Exit Conversation
-              </button>
+      {/* 📱 GTA 5 iFRUIT SMARTPHONE MODAL */}
+      {showIFruitPhone && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-slate-950 border-4 border-slate-700 rounded-[44px] p-4 shadow-2xl space-y-4 relative overflow-hidden">
+            {/* Phone Speaker Notch */}
+            <div className="w-24 h-4 bg-slate-800 rounded-full mx-auto" />
+
+            {/* Phone Header */}
+            <div className="flex items-center justify-between text-xs font-mono text-slate-400 px-2">
+              <span className="font-bold">iFruit 9S • 5G</span>
+              <span className="text-amber-400 font-bold">14:45</span>
             </div>
 
-            {/* NPC Speech Line with Voice Playback */}
-            <div className="p-4 bg-slate-950 rounded-2xl border border-amber-500/30 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">{activeTelltaleDialogue.name} says:</span>
-                <AudioSpeakButton text={activeTelltaleDialogue.greeting} label="Listen NPC" className="bg-amber-500 text-slate-950 font-bold text-xs px-3 py-1 rounded-xl" />
+            {phoneScreen === 'home' && (
+              <div className="grid grid-cols-3 gap-4 p-2 text-center text-xs">
+                <button
+                  onClick={() => setPhoneScreen('contacts')}
+                  className="p-3 bg-slate-900 hover:bg-slate-800 rounded-2xl border border-slate-800 flex flex-col items-center gap-1 cursor-pointer"
+                >
+                  <span className="text-2xl">👥</span>
+                  <span className="text-slate-300 font-bold">Contacts</span>
+                </button>
+                <button
+                  onClick={() => setPhoneScreen('bank')}
+                  className="p-3 bg-slate-900 hover:bg-slate-800 rounded-2xl border border-slate-800 flex flex-col items-center gap-1 cursor-pointer"
+                >
+                  <span className="text-2xl">🏦</span>
+                  <span className="text-emerald-400 font-bold">Maze Bank</span>
+                </button>
+                <button
+                  onClick={() => setPhoneScreen('gps')}
+                  className="p-3 bg-slate-900 hover:bg-slate-800 rounded-2xl border border-slate-800 flex flex-col items-center gap-1 cursor-pointer"
+                >
+                  <span className="text-2xl">🗺️</span>
+                  <span className="text-sky-400 font-bold">Quick GPS</span>
+                </button>
               </div>
-              <p className="text-sm text-white font-medium leading-relaxed">
-                "{activeTelltaleDialogue.greeting}"
-              </p>
-            </div>
+            )}
 
-            {/* Telltale 4-Way Dialogue Choice Wheel */}
-            <div className="space-y-3">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Choose Swathi's Spoken Response:</span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                {activeTelltaleDialogue.choices.map((choice, idx) => (
+            {phoneScreen === 'contacts' && (
+              <div className="space-y-2 p-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-amber-400 font-mono">CONTACTS</span>
+                  <button onClick={() => setPhoneScreen('home')} className="text-xs text-slate-400">Back</button>
+                </div>
+                {telltaleNPCs.map(npc => (
                   <button
-                    key={idx}
+                    key={npc.id}
                     onClick={() => {
-                      setSelectedChoice(choice);
                       sound.playClick();
-                      setTelltaleNotification(choice.memoryTag);
-                      setTimeout(() => setTelltaleNotification(null), 4000);
+                      setShowIFruitPhone(false);
+                      setActiveTelltaleDialogue(npc);
                     }}
-                    className={`p-4 rounded-2xl border text-left font-bold transition-all flex flex-col justify-between gap-2 cursor-pointer ${selectedChoice === choice ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 border-white shadow-xl scale-[1.02]' : 'bg-slate-950 text-slate-200 border-slate-800 hover:bg-slate-800'}`}
+                    className="w-full p-2.5 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 flex items-center justify-between text-left text-xs cursor-pointer"
                   >
-                    <span>{choice.text}</span>
-                    <span className="text-[10px] opacity-75 font-mono">+{choice.xp} XP • Choice #{idx + 1}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{npc.avatar}</span>
+                      <div>
+                        <div className="font-black text-white">{npc.name}</div>
+                        <div className="text-[10px] text-slate-400">{npc.role}</div>
+                      </div>
+                    </div>
+                    <PhoneCall className="w-4 h-4 text-emerald-400" />
                   </button>
                 ))}
               </div>
+            )}
+
+            {phoneScreen === 'bank' && (
+              <div className="space-y-3 p-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-400 font-mono">MAZE BANK ONLINE</span>
+                  <button onClick={() => setPhoneScreen('home')} className="text-xs text-slate-400">Back</button>
+                </div>
+                <div className="p-4 bg-emerald-950/40 border border-emerald-500/40 rounded-2xl text-center">
+                  <span className="text-xs text-slate-400 uppercase">Available Funds</span>
+                  <div className="text-2xl font-black text-emerald-400 font-mono mt-1">
+                    ${cashBalance.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {phoneScreen === 'gps' && (
+              <div className="space-y-2 p-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-sky-400 font-mono">QUICK GPS BEACONS</span>
+                  <button onClick={() => setPhoneScreen('home')} className="text-xs text-slate-400">Back</button>
+                </div>
+                <button
+                  onClick={() => {
+                    playerState.current.x = 0;
+                    playerState.current.z = -20;
+                    setShowIFruitPhone(false);
+                    sound.playClick();
+                  }}
+                  className="w-full p-2 bg-emerald-950/40 border border-emerald-500/40 rounded-xl text-left text-xs text-emerald-300 font-bold cursor-pointer"
+                >
+                  🟢 Bean Machine Reserve
+                </button>
+                <button
+                  onClick={() => {
+                    playerState.current.x = -68;
+                    playerState.current.z = -10;
+                    setShowIFruitPhone(false);
+                    sound.playClick();
+                  }}
+                  className="w-full p-2 bg-amber-950/40 border border-amber-500/40 rounded-xl text-left text-xs text-amber-300 font-bold cursor-pointer"
+                >
+                  🟡 LSIA Airport Security
+                </button>
+                <button
+                  onClick={() => {
+                    playerState.current.x = -50;
+                    playerState.current.z = -18;
+                    setShowIFruitPhone(false);
+                    sound.playClick();
+                  }}
+                  className="w-full p-2 bg-sky-950/40 border border-sky-500/40 rounded-xl text-left text-xs text-sky-300 font-bold cursor-pointer"
+                >
+                  🔵 Immigration Desk
+                </button>
+                <button
+                  onClick={() => {
+                    playerState.current.x = 0;
+                    playerState.current.z = 38;
+                    setShowIFruitPhone(false);
+                    sound.playClick();
+                  }}
+                  className="w-full p-2 bg-rose-950/40 border border-rose-500/40 rounded-xl text-left text-xs text-rose-300 font-bold cursor-pointer"
+                >
+                  🔴 Grand Marina Hotel Lobby
+                </button>
+              </div>
+            )}
+
+            {/* Phone Home Bar Button */}
+            <div className="pt-2 text-center">
+              <button
+                onClick={() => setShowIFruitPhone(false)}
+                className="w-28 h-2 bg-slate-700 hover:bg-slate-500 rounded-full mx-auto cursor-pointer"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🎬 TELLTALE CINEMATIC DIALOGUE HUD (WIDE LETTERBOX & 4-WAY WHEEL) */}
+      {activeTelltaleDialogue && (
+        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col justify-between p-4 sm:p-8 animate-fadeIn">
+          {/* Top Letterbox Bar */}
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-2xl font-black">
+                {activeTelltaleDialogue.avatar}
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 font-mono">
+                  {activeTelltaleDialogue.gtaTitle}
+                </span>
+                <h3 className="text-xl font-black text-white">{activeTelltaleDialogue.name}</h3>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveTelltaleDialogue(null)}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold cursor-pointer"
+            >
+              ✕ Exit Dialogue
+            </button>
+          </div>
+
+          {/* Center Cinematic Subtitle Display */}
+          <div className="max-w-3xl mx-auto w-full p-4 bg-black/90 border-2 border-amber-500/40 rounded-2xl space-y-2 shadow-2xl my-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-amber-400 uppercase font-mono">{activeTelltaleDialogue.name}</span>
+              <AudioSpeakButton text={activeTelltaleDialogue.greeting} label="Listen Voice" className="bg-amber-500 text-slate-950 font-bold text-xs px-3 py-1 rounded-xl" />
+            </div>
+            <p className="text-sm sm:text-base text-white font-medium leading-relaxed">
+              "{activeTelltaleDialogue.greeting}"
+            </p>
+          </div>
+
+          {/* Bottom 4-Way Telltale Choice Wheel */}
+          <div className="max-w-4xl mx-auto w-full space-y-3 pb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              {activeTelltaleDialogue.choices.map((choice, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setSelectedChoice(choice);
+                    sound.playClick();
+                    setTelltaleNotification(choice.memoryTag);
+                    setTimeout(() => setTelltaleNotification(null), 4000);
+                  }}
+                  className={`p-4 rounded-2xl border text-left font-bold transition-all flex flex-col justify-between gap-2 cursor-pointer ${selectedChoice === choice ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 border-white shadow-xl scale-[1.02]' : 'bg-slate-950 text-slate-200 border-slate-800 hover:bg-slate-800'}`}
+                >
+                  <span>{choice.text}</span>
+                  <div className="flex items-center justify-between text-[10px] opacity-75 font-mono">
+                    <span>Choice #{idx + 1}</span>
+                    <span className="text-emerald-400 font-bold">+{choice.xp} XP • +${choice.cash}</span>
+                  </div>
+                </button>
+              ))}
             </div>
 
-            {/* If choice selected, show response and live microphone practice */}
+            {/* If choice selected: Pronounce with Voice Practice */}
             {selectedChoice && (
-              <div className="p-4 bg-slate-950 rounded-2xl border border-emerald-500/40 space-y-3 animate-fadeIn">
+              <div className="p-4 bg-slate-950 rounded-2xl border border-emerald-500/50 space-y-3 animate-fadeIn">
                 <div className="space-y-1">
-                  <span className="text-xs font-bold text-emerald-400 uppercase">{activeTelltaleDialogue.name}'s Reply:</span>
+                  <span className="text-xs font-bold text-emerald-400 uppercase font-mono">{activeTelltaleDialogue.name}'s Response:</span>
                   <p className="text-xs text-white">"{selectedChoice.response}"</p>
                 </div>
 
                 <div className="border-t border-slate-800 pt-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-sky-400">Practice Pronouncing Your Response:</span>
+                    <span className="text-xs font-bold text-sky-400">Speak Choice to Pass GTA Mission:</span>
                     <AudioSpeakButton text={selectedChoice.text} label="Listen Target" className="bg-sky-500 text-slate-950 font-bold text-xs px-3 py-1 rounded-xl" />
                   </div>
                   <VoiceSpeechPractice
                     targetPhrase={selectedChoice.text}
                     accentColor="emerald"
                     onSuccess={() => {
-                      sound.playSuccess();
-                      confetti({ particleCount: 90, spread: 80 });
-                      onAddXp(selectedChoice.xp, `Mastered Spoken Choice with ${activeTelltaleDialogue.name}! 🎤✨`);
+                      triggerMissionPassed(
+                        activeTelltaleDialogue.gtaTitle,
+                        `Mastered spoken English dialogue with ${activeTelltaleDialogue.name}!`,
+                        selectedChoice.xp,
+                        selectedChoice.cash
+                      );
+                      setActiveTelltaleDialogue(null);
                     }}
                   />
                 </div>
