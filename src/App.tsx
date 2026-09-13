@@ -20,6 +20,7 @@ import { FormFillingLab } from './components/modules/FormFillingLab';
 import { FashionShoppingMall } from './components/modules/FashionShoppingMall';
 import { OpenWorldGameEngine } from './components/modules/OpenWorldGameEngine';
 import { RealOpenWorldGame } from './components/modules/RealOpenWorldGame';
+import { UltimateRealOpenWorldEngine } from './components/modules/UltimateRealOpenWorldEngine';
 import { Sparkles, Trophy, Heart, Coffee, ShieldCheck, Gamepad2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -106,7 +107,7 @@ export const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
         {currentTab === 'openworld' && (
-          <RealOpenWorldGame
+          <UltimateRealOpenWorldEngine
             onNavigateTab={(mod) => {
               setCurrentTab(mod as any);
               window.scrollTo({ top: 0, behavior: 'smooth' });
