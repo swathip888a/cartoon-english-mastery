@@ -12,6 +12,7 @@ import { AudioSpeakButton } from '../AudioSpeakButton';
 import { VoiceSpeechPractice } from '../VoiceSpeechPractice';
 import { AirportLuggageSecuritySim } from './AirportLuggageSecuritySim';
 import { AirplaneCabinLavatorySim } from './AirplaneCabinLavatorySim';
+import { Roblox3DWorldSimulator } from './Roblox3DWorldSimulator';
 import { sound } from '../../utils/audio';
 import {
   Plane,
@@ -44,7 +45,7 @@ interface AirportMasterclassProps {
 export const AirportMasterclass: React.FC<AirportMasterclassProps> = ({ onAddXp }) => {
   const [selectedRoute, setSelectedRoute] = useState<FlightRouteOption>(FLIGHT_ROUTES[0]);
   const [selectedStepIndex, setSelectedStepIndex] = useState<number>(0);
-  const [activeTab, setActiveTab] = useState<'walkthrough' | 'visa_immigration_sim' | 'cabin_lavatory' | 'luggage_security' | 'boarding_pass' | 'vocab_dictionary'>('visa_immigration_sim');
+  const [activeTab, setActiveTab] = useState<'3d_airport_metaverse' | 'visa_immigration_sim' | 'walkthrough' | 'cabin_lavatory' | 'luggage_security' | 'boarding_pass' | 'vocab_dictionary'>('3d_airport_metaverse');
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
 
   // Visa & Immigration Simulation State
@@ -160,6 +161,7 @@ export const AirportMasterclass: React.FC<AirportMasterclassProps> = ({ onAddXp 
       {/* Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto no-scrollbar">
         {[
+          { id: '3d_airport_metaverse', label: '🌍 3D Real-World Airport (Singapore Jewel & Vizag VTZ)', icon: <Compass className="w-4 h-4 text-amber-400" /> },
           { id: 'visa_immigration_sim', label: '🛂 2D Anime Visa & Immigration Lab', icon: <Fingerprint className="w-4 h-4" /> },
           { id: 'walkthrough', label: '🚶 Step-by-Step Airport Pipeline', icon: <Compass className="w-4 h-4" /> },
           { id: 'cabin_lavatory', label: '✈️ In-Flight Seat 14A & Lavatory', icon: <Plane className="w-4 h-4" /> },
@@ -184,6 +186,13 @@ export const AirportMasterclass: React.FC<AirportMasterclassProps> = ({ onAddXp 
           </button>
         ))}
       </div>
+
+      {/* TAB: 3D REAL-WORLD AIRPORT METAVERSE SIMULATOR */}
+      {activeTab === '3d_airport_metaverse' && (
+        <div className="space-y-6 animate-fadeIn">
+          <Roblox3DWorldSimulator onAddXp={onAddXp} />
+        </div>
+      )}
 
       {/* TAB 0: 2D ANIME VISA INTERVIEW & IMMIGRATION SIMULATOR */}
       {activeTab === 'visa_immigration_sim' && (
