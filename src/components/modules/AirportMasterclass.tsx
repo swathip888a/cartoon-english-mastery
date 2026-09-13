@@ -13,6 +13,7 @@ import { VoiceSpeechPractice } from '../VoiceSpeechPractice';
 import { AirportLuggageSecuritySim } from './AirportLuggageSecuritySim';
 import { AirplaneCabinLavatorySim } from './AirplaneCabinLavatorySim';
 import { Roblox3DWorldSimulator } from './Roblox3DWorldSimulator';
+import { AAAWorldSimulator } from './AAAWorldSimulator';
 import { sound } from '../../utils/audio';
 import {
   Plane,
@@ -190,7 +191,7 @@ export const AirportMasterclass: React.FC<AirportMasterclassProps> = ({ onAddXp 
       {/* TAB: 3D REAL-WORLD AIRPORT METAVERSE SIMULATOR */}
       {activeTab === '3d_airport_metaverse' && (
         <div className="space-y-6 animate-fadeIn">
-          <Roblox3DWorldSimulator onAddXp={onAddXp} />
+          <AAAWorldSimulator onAddXp={onAddXp} />
         </div>
       )}
 

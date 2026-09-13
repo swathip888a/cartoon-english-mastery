@@ -6,6 +6,7 @@ import { AudioSpeakButton } from '../AudioSpeakButton';
 import { VoiceSpeechPractice } from '../VoiceSpeechPractice';
 import { AnimeCafeSimulatorGame } from './AnimeCafeSimulatorGame';
 import { RealisticWorldSimulator } from './RealisticWorldSimulator';
+import { AAAWorldSimulator } from './AAAWorldSimulator';
 import { sound } from '../../utils/audio';
 import {
   Coffee,
@@ -300,9 +301,9 @@ export const StarbucksBaristaShop: React.FC<StarbucksBaristaShopProps> = ({ onAd
         </div>
       </div>
 
-      {/* 🌍 3D REAL-WORLD STARBUCKS EXPERIENCE */}
+      {/* 🌍 AAA NEXT-GEN 3D REAL-WORLD STARBUCKS EXPERIENCE */}
       {activeShopMode === 'real_world_3d_experience' && (
-        <RealisticWorldSimulator onAddXp={onAddXp} />
+        <AAAWorldSimulator onAddXp={onAddXp} />
       )}
 
       {/* 🎮 2D ANIME CAFE SIMULATOR GAME */}
